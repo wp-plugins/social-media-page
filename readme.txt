@@ -1,7 +1,7 @@
 === Social Media Page ===
 Contributors: philipnorton42
 Donate link: http://www.norton42.com/
-Tags: social,media,page,profile,profiles
+Tags: social media page,social media,social,media,page,profile,profiles
 Requires at least: 2.6.3
 Tested up to: 2.6.3
 Stable tag: 1.0
