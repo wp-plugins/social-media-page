@@ -1,4 +1,19 @@
 <?php
+// Update old versions
+         //youtube update
+$sql[] = "UPDATE " . $table_prefix . "socialmediaprofiles
+          SET profileTemplate = 'http://www.youtube.com/{username}'
+          WHERE site = 'YouTube'
+          LIMIT 1;";
+         //ebay update
+$sql[] = "UPDATE " . $table_prefix . "socialmediaprofiles
+          SET profileTemplate = 'http://myworld.ebay.com/{username}/'
+          WHERE site = 'ebay'
+          LIMIT 1;";
+$sql[] = "UPDATE " . $table_prefix . "socialmediaprofiles
+          SET site = 'Last.fm'
+          WHERE site = 'Last_fm'
+          LIMIT 1;";
 
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
@@ -95,7 +110,7 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('YouTube',
                  'http://www.youtube.com/',
-                 'http://uk.youtube.com/{username}',
+                 'http://www.youtube.com/{username}',
                  14,
                  'youtube.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
@@ -142,7 +157,7 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'steam.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
-          VALUES('Last_fm',
+          VALUES('Last.fm',
                  'http://www.last.fm',
                  'http://www.last.fm/user/{username}',
                  21,
@@ -559,14 +574,14 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'http://www.joost.com/',
                  'http://www.joost.com/users/{username}/',
                  78,
-                 'joost.png');";           
+                 'joost.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('kirtsy',
                  'http://www.kirtsy.com/',
                  'http://www.kirtsy.com/user.php?login={username}',
                  79,
-                 'kirtsy.gif');";           
+                 'kirtsy.gif');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('KWICK',
@@ -605,8 +620,8 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('ebay',
-                 'http://www.ebay.co.uk/',
-                 'http://myworld.ebay.co.uk/{username}/',
+                 'http://www.ebay.com/',
+                 'http://myworld.ebay.com/{username}/',
                  85,
                  'ebay.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
@@ -643,14 +658,14 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'http://www.netvibes.com/',
                  'http://www.netvibes.com/{username}',
                  90,
-                 'netvibes.png');";  
+                 'netvibes.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('Odeo',
                  'http://www.odeo.com/',
                  'http://www.odeo.com/users/{username}/',
                  91,
-                 'odeo.png');";                           
+                 'odeo.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('Photocase',
@@ -664,7 +679,7 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'http://picasaweb.google.com/',
                  'http://picasaweb.google.com/{username}/',
                  93,
-                 'picasa.png');";   
+                 'picasa.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('Plazes',
@@ -678,21 +693,21 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'http://www.plugim.com/',
                  'http://www.plugim.com/user/{username}/',
                  95,
-                 'plugim.png');";   
+                 'plugim.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('Polyvore',
                  'http://www.polyvore.com/',
                  'http://www.polyvore.com/cgi/profile?id={username}',
                  96,
-                 'polyvore.png');";   
+                 'polyvore.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('ppnow',
                  'http://www.ppnow.com/',
                  'http://www.ppnow.com/bookmark/{username}/',
                  97,
-                 'ppnow.png');";                                                                                        
+                 'ppnow.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('Propeller',
@@ -713,7 +728,7 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'http://www.qype.co.uk/',
                  'http://www.qype.co.uk/people/{username}/',
                  100,
-                 'qype.png');";       
+                 'qype.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('Ratimarks',
@@ -748,21 +763,21 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'http://sixgroups.com/',
                  'http://sixgroups.com/profile/{username}/',
                  105,
-                 'sixgroups.png');"; 
+                 'sixgroups.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('Slashdot',
                  'http://slashdot.org/',
                  'http://slashdot.org/~{username}',
                  106,
-                 'slashdot.png');";                                                                                                                                                                        
+                 'slashdot.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('SmugMug',
                  'http://www.smugmug.com',
                  'http://{username}.smugmug.com/',
                  107,
-                 'smugmug.png');"; 
+                 'smugmug.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('Folkd',
@@ -877,7 +892,7 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'http://www.xing.com/profile/{username}',
                  123,
                  'xing.png');";
-                 
+
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('YiGG',
