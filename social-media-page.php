@@ -1,6 +1,6 @@
 <?php
 /**
- * MyClass File Doc Comment
+ * social-media-page.php
  *
  * PHP Version 5
  *
@@ -15,12 +15,12 @@
  * Plugin URI: http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html
  * Description: Generates a list of social media profiles on a given page. <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social Media Page plugin homepage">Social Media Page plugin homepage</a>.
  * Author: Philip Norton
- * Version: 1.0
+ * Version: 1.1
  * Author URI: http://www.norton42.org.uk/
  *
  */
 
-$smpVer      = '1.0';
+$smpVer      = '1.1';
 $smpimagepath = WP_CONTENT_URL . '/plugins/' .
                 plugin_basename(dirname(__FILE__)) . '/images/';
 $exclusions   = array( 'Facebook','Wis.dm' );
