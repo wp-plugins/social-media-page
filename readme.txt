@@ -18,7 +18,8 @@ When the links are displayed on the page it will use a keyword of your choice as
 
 With this plugin you can create a central base for any social media strategy.
 
-=Changes in version 1.2=
+= Changes in version 1.2 =
+
 1. This plugin can now be used as a widget.
 1. Plugin output tweaked to have normal output for pages and smaller output when printing widget.
 1. Added option to allow blog admin to decide if credit should be given to plugin author.
