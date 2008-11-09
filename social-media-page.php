@@ -15,12 +15,12 @@
  * Plugin URI: http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html
  * Description: Generates a list of social media profiles on a given page. <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social Media Page plugin homepage">Social Media Page plugin homepage</a>.
  * Author: Philip Norton
- * Version: 1.1
+ * Version: 1.2
  * Author URI: http://www.norton42.org.uk/
  *
  */
 
-$smpVer      = '1.1';
+$smpVer      = '1.2';
 $smpimagepath = WP_CONTENT_URL . '/plugins/' .
                 plugin_basename(dirname(__FILE__)) . '/images/';
 $exclusions   = array( 'Facebook','Wis.dm' );
@@ -32,6 +32,12 @@ $exclusions   = array( 'Facebook','Wis.dm' );
 add_option('smp_keyword', "");
 
 /**
+* Create smp_giveCredit option if it doesn't exist.  This option is used to
+* store a boolean value regarding the displaying of a link back to the author.
+*/
+add_option('smp_giveCredit', "yes");
+
+/**
 * Add options page
 *
 * @return void
@@ -39,8 +45,8 @@ add_option('smp_keyword', "");
 function smpAddOptionPages()
 {
     if ( function_exists('add_options_page') ) {
-        add_options_page('Social Media Page',
-                         'Social Media Page',
+        add_options_page(__('Social Media Page'),
+                         __('Social Media Page'),
                          8,
                          __FILE__,
                          'smpOptionsPage');
@@ -79,6 +85,51 @@ function smpInstall()
     include 'profiles.php';
     foreach ( $sql as $qry ) {
         $wpdb->query($qry);
+    }
+
+    // Get this directory and all sub directories and correct permissions.
+    // This is needed as Wordpress plugin updater sometimes causes permission
+    // issues.
+    chmod_R(dirname(__FILE__),0775);
+}
+
+/**
+ * A recursive function that runs through a directory and all sub directories
+ * and sets the permissions to a defined value.
+ *
+ * @param string $path     The starting directory.
+ * @param string $filemode The permission to set the directories to.
+ *
+ * @return boolean True on sucess, false on failure.
+ **/
+function chmod_R($path, $filemode) {
+    echo $path.'<br />';
+    if ( !is_dir($path) ) {
+       return chmod($path, $filemode);
+    }
+    $dh = opendir($path);
+    while ( $file = readdir($dh) ) {
+        if ( $file != '.' && $file != '..' ) {
+            $fullpath = $path.'/'.$file;
+            echo $fullpath. '<br />';
+            if( !is_dir($fullpath) ) {
+              if ( !chmod($fullpath, $filemode) ){
+                 return false;
+              }
+            } else {
+              if ( !chmod_R($fullpath, $filemode) ) {
+                 return false;
+              }
+            }
+        }
+    }
+
+    closedir($dh);
+
+    if ( chmod($path, $filemode) ) {
+      return true;
+    } else {
+      return false;
     }
 }
 
@@ -193,7 +244,11 @@ function smpOptionsPage()
     if ( isset($_POST['smp_update']) ) {
         echo '<div id="message" class="updated fade"><p><strong>';
         update_option('smp_keyword', (string)$_POST["smp_keyword"]);
-
+        if ( isset($_POST["smp_giveCredit"]) ) {
+          update_option('smp_giveCredit', 'yes');
+        }else{
+          update_option('smp_giveCredit', 'no');
+        }
         global $exclusions;
 
         // work out sort orders.
@@ -258,11 +313,23 @@ function smpOptionsPage()
     <input type="hidden" name="smp_update" id="smp_update" value="true" />
     <fieldset class="options">
     <h3>General Options</h3>
+
     <label for="smp_keyword">Keyword</label>
     <input name="smp_keyword" type="text" size="50"
            value="<?php echo get_option('smp_keyword') ?>"/>
     <br />
     <p>This is the keyword that will be used to link to your profiles.</p>
+
+    <label for="smp_giveCredit">Give Credit?</label>
+    <?php
+    $smpCreditChecked = '';
+    if( get_option('smp_giveCredit') == 'yes' ) {
+        $smpCreditChecked = 'checked="checked"';
+    }
+    ?>
+    <input name="smp_giveCredit" type="checkbox" <?php echo $smpCreditChecked; ?>
+    value="smp_giveCredit" />
+    <p>Give credit for plugin to plugin author?</p>
 
     </fieldset>
     <div class="submit">
@@ -372,7 +439,7 @@ function smpOptionsPage()
                        type="hidden"
                        value="<?php echo $profile['id']; ?>" />
                 </div><?php
-                            
+
             }
         }
     }
@@ -400,8 +467,8 @@ function smpOptionsPage()
 
     <p><strong>*</strong> Make sure that you enable public vewing in your
     options page!</p>
-    <p><strong>**</strong> Make sure that you set your profile URL in the 
-    settings.</p>    
+    <p><strong>**</strong> Make sure that you set your profile URL in the
+    settings.</p>
     </fieldset>
 
     <div class="submit">
@@ -482,33 +549,47 @@ function smpGetSocialProfiles( $all=false )
 /**
 * Create the page
 *
+* @param boolean $widget Used to display different layout for widgets.
+*
 * @return string The page contents.
 */
-function smpCreatePage()
+function smpCreatePage($widget=false)
 {
     global $smpimagepath;
 
-    $keyword  = (string)get_option('smp_keyword');
-    $profiles = smpGetSocialProfiles();
-    $t_out    = '';
+    $keyword    = (string)get_option('smp_keyword');
+    $giveCredit = get_option('smp_giveCredit');
+    $profiles   = smpGetSocialProfiles();
+    $t_out      = '';
     // make sure there are profiles to use
     if ( count($profiles) > 0 ) {
         $t_out .= '<div id="smp-wrapper">';
         $t_out .= '<ul>';
-
-        foreach ( $profiles as $profile ) {
-            $t_out .= '<li>
-            <img src="' . $smpimagepath.$profile['logo'] . '"
-                 alt="' . $keyword . ' ' . $profile['site'] . '" />
-            <a href="' . $profile['profileUrl'] . '" title="' . $keyword . '">
-            ' . $keyword . '</a> at ' . $profile['site'] . '</li>';
+        if( $widget ) {
+            foreach ( $profiles as $profile ) {
+                $t_out .= '<li>
+                <img src="' . $smpimagepath.$profile['logo'] . '"
+                     alt="' . $keyword . ' ' . $profile['site'] . '" />
+                <a href="' . $profile['profileUrl'] . '" title="' . $keyword . '">
+                ' . $profile['site'] . '</a></li>';
+            }
+        } else {
+            foreach ( $profiles as $profile ) {
+                $t_out .= '<li>
+                <img src="' . $smpimagepath.$profile['logo'] . '"
+                     alt="' . $keyword . ' ' . $profile['site'] . '" />
+                <a href="' . $profile['profileUrl'] . '" title="' . $keyword . '">
+                ' . $keyword . '</a> at ' . $profile['site'] . '</li>';
+            }
         }
         $t_out .= '</ul>';
 
-        $t_out .= '<div style="text-align:right;">
+        if ( $giveCredit == "yes" ) {
+            $t_out .= '<div style="text-align:right;">
                    <p style="font-size:90%;">Created by
                    <a href="http://www.norton42.org.uk" title="Philip Norton">
                    Philip Norton</a></p></div>';
+        }
         $t_out .= '</div>';
 
         // Ampersand fix
@@ -537,6 +618,29 @@ function smpGeneratePage( $content )
     }
     return $content;
 }
+
+/**
+* Create a Social Media Page Widget
+*
+* @return void
+*/
+function smpWidget() {
+    echo '<h2 class="widgettitle">'.__('Social Media').'</h2>';
+    echo smpCreatePage(true);
+}
+
+/**
+* Initialise and register the Social Media Page Widget
+*
+* @return void
+*/
+function initSocialMedia() {
+    register_sidebar_widget(__('Social Media Page'), 'smpWidget');
+}
+
+
+add_action("plugins_loaded", "initSocialMedia");
+
 
 
 register_activation_hook(__FILE__, 'smpInstall');

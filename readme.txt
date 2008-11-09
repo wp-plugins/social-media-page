@@ -4,19 +4,25 @@ Donate link: http://www.norton42.org.uk/
 Tags: social media page,social media,social,media,page,profile,profiles
 Requires at least: 2.6.3
 Tested up to: 2.6.3
-Stable tag: 1.1
+Stable tag: 1.2
 
 The Social Media Page Wordpress plugin will add a list of links to your social media profiles on a page or post of your choice.
 
 == Description ==
 
-The Social Media Page Wordpress plugin will add a list of links to your social media profiles on a page or post of your choice through the use of a simple tag.
+The Social Media Page Wordpress plugin will add a list of links to your social media profiles on a page or post of your choice through the use of a simple tag.  A widget is also added so that you can display this list of links in the side menu of the site.
 
 Rather than getting you to enter all of your social media profiles as URLs the plugin gets you to enter your username and works out the rest for you. Some exceptions (like Facebook) require some extra information, which has been accounted for.  There are over 100 different social media sites to select from so it should cover anything you happen to be a member of.
 
 When the links are displayed on the page it will use a keyword of your choice as the text for the link.
 
 With this plugin you can create a central base for any social media strategy.
+
+=Changes in version 1.2=
+1. This plugin can now be used as a widget.
+1. Plugin output tweaked to have normal output for pages and smaller output when printing widget.
+1. Added option to allow blog admin to decide if credit should be given to plugin author.
+1. Noticed bug when updating plugin due to file permissions. Added a function that sets file permissions properly at install.
 
 == Installation ==
 
