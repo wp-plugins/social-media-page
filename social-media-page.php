@@ -13,7 +13,7 @@
  *
  * Plugin Name: Social Media Page
  * Plugin URI: http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html
- * Description: Generates a list of social media profiles on a given page. <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social Media Page plugin homepage">Social Media Page plugin homepage</a>.
+ * Description: Generates a list of social media profiles on a given page or as a widget. <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social Media Page plugin homepage">Social Media Page plugin homepage</a>.
  * Author: Philip Norton
  * Version: 1.3
  * Author URI: http://www.norton42.org.uk/
