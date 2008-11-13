@@ -15,15 +15,15 @@
  * Plugin URI: http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html
  * Description: Generates a list of social media profiles on a given page. <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social Media Page plugin homepage">Social Media Page plugin homepage</a>.
  * Author: Philip Norton
- * Version: 1.2
+ * Version: 1.3
  * Author URI: http://www.norton42.org.uk/
  *
  */
 
-$smpVer      = '1.2';
+$smpVer      = '1.3';
 $smpimagepath = WP_CONTENT_URL . '/plugins/' .
                 plugin_basename(dirname(__FILE__)) . '/images/';
-$exclusions   = array( 'Facebook','Wis.dm' );
+$exclusions   = array( 'Facebook', 'Wis.dm' );
 
 /**
 * Create smp_keyword option if it doesn't exist.  This option is used to store
@@ -36,6 +36,12 @@ add_option('smp_keyword', "");
 * store a boolean value regarding the displaying of a link back to the author.
 */
 add_option('smp_giveCredit', "yes");
+
+/**
+* Create smp_relNoFollow option if it doesn't exist.  This option is used to
+* store a boolean value regarding the addition of rel="nofollow" to the links.
+*/
+add_option('smp_relNoFollow', "no");
 
 /**
 * Add options page
@@ -103,7 +109,6 @@ function smpInstall()
  * @return boolean True on sucess, false on failure.
  **/
 function chmod_R($path, $filemode) {
-    echo $path.'<br />';
     if ( !is_dir($path) ) {
        return chmod($path, $filemode);
     }
@@ -111,7 +116,6 @@ function chmod_R($path, $filemode) {
     while ( $file = readdir($dh) ) {
         if ( $file != '.' && $file != '..' ) {
             $fullpath = $path.'/'.$file;
-            echo $fullpath. '<br />';
             if( !is_dir($fullpath) ) {
               if ( !chmod($fullpath, $filemode) ){
                  return false;
@@ -249,6 +253,13 @@ function smpOptionsPage()
         }else{
           update_option('smp_giveCredit', 'no');
         }
+
+        if ( isset($_POST["smp_relNoFollow"]) ) {
+          update_option('smp_relNoFollow', 'yes');
+        }else{
+          update_option('smp_relNoFollow', 'no');
+        }
+        
         global $exclusions;
 
         // work out sort orders.
@@ -308,19 +319,22 @@ function smpOptionsPage()
     };
     ?>
     <div class="wrap">
-    <h2>Social Media Page v <?php echo $smpVer; ?></h2>
+    <h2>Social Media Page Plugin v <?php echo $smpVer; ?></h2>
     <form method="post" action="<?php echo $_SERVER["REQUEST_URI"]; ?>">
     <input type="hidden" name="smp_update" id="smp_update" value="true" />
+
     <fieldset class="options">
+    <div style="border-top:1px solid rgb(204,204,204);">
     <h3>General Options</h3>
 
     <label for="smp_keyword">Keyword</label>
     <input name="smp_keyword" type="text" size="50"
-           value="<?php echo get_option('smp_keyword') ?>"/>
-    <br />
-    <p>This is the keyword that will be used to link to your profiles.</p>
-
-    <label for="smp_giveCredit">Give Credit?</label>
+           value="<?php echo get_option('smp_keyword') ?>" />
+    <p><em>This is the keyword that will be used to link to your profiles.</em></p>
+    </div>
+    
+    <div style="border-top:1px solid rgb(204,204,204);">
+    <p><label for="smp_giveCredit">Give credit for plugin to plugin author?</label>
     <?php
     $smpCreditChecked = '';
     if( get_option('smp_giveCredit') == 'yes' ) {
@@ -328,14 +342,26 @@ function smpOptionsPage()
     }
     ?>
     <input name="smp_giveCredit" type="checkbox" <?php echo $smpCreditChecked; ?>
-    value="smp_giveCredit" />
-    <p>Give credit for plugin to plugin author?</p>
-
+    value="smp_giveCredit" /></p>
+    
+    <p><label for="smp_relNoFollow">Add rel=&quot;nofollow&quot; attribute to all
+    links?</label>
+    <?php
+    $smpNoFollowChecked = '';
+    if( get_option('smp_relNoFollow') == 'yes' ) {
+        $smpNoFollowChecked = 'checked="checked"';
+    }
+    ?>
+    <input name="smp_relNoFollow" type="checkbox" <?php echo $smpNoFollowChecked; ?>
+    value="smp_relNoFollow" /></p>
     </fieldset>
-    <div class="submit">
-    <input type="submit" name="smp_update" value="Update Profiles" />
     </div>
-    <fieldset class="options">
+    <p><a href="#smpHelp" title="Jump down to help." name="top">Need some help?</a></p>
+    <div class="submit">
+    <input type="submit" name="smp_update" value="Update Profiles &amp; Options" />
+    </div>
+    
+    <fieldset class="profiles">
     <h3>Social Media Profiles</h3>
     <p>Drag the grey areas up and down to order the ouput of the profiles.</p>
     <div id="smpUsername">Username/UserID</div>
@@ -472,16 +498,24 @@ function smpOptionsPage()
     </fieldset>
 
     <div class="submit">
-    <input type="submit" name="smp_update" value="Update Profiles" />
+    <input type="submit" name="smp_update" value="Update Profiles &amp; Options" />
     </div>
     </form>
+
     <h3>Social Media Page Plugin</h3>
-    <p>To add this to your site put the following to a page or post:<br />
+    <p><a href="#top" title="Go back to the top." name="smpHelp">Top</a></p>
+    <p>To add this to your site fill out some profile information using the form
+    below and put the following to a page or post:<br />
     <p>&lt;!-- social-media-page --&gt;</p>
     <p>Make sure you are in HTML mode as the visual editor will display that text on
-    your site and not the intended content.</p>
+    your site and not the intended content.  If you find that the plugin is giving
+    invalid HTML then make sure that there is a single blank linke before and
+    after this tag.</p>
+    <p>You can also add this information as a widget.</p>
     <p>For more informaiton about this plugin, or to report bugs and suggestions go
     to <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social media page plugin">social media page plugin</a> page at <a href="http://www.norton42.org.uk/" title="www.norton42.org.uk">www.norton42.org.uk</a>.</p>
+
+    
     </div><?php
 }
 
@@ -557,29 +591,39 @@ function smpCreatePage($widget=false)
 {
     global $smpimagepath;
 
-    $keyword    = (string)get_option('smp_keyword');
-    $giveCredit = get_option('smp_giveCredit');
-    $profiles   = smpGetSocialProfiles();
-    $t_out      = '';
+    $keyword     = (string)get_option('smp_keyword');
+    $giveCredit  = get_option('smp_giveCredit');
+    $relNofollow = get_option('smp_relNoFollow');
+    $profiles    = smpGetSocialProfiles();
+    $t_out       = '';
+    
     // make sure there are profiles to use
     if ( count($profiles) > 0 ) {
-        $t_out .= '<div id="smp-wrapper">';
+        if( !$widget ) {
+            $t_out .= '<div id="smp-wrapper">';
+        }
         $t_out .= '<ul>';
         if( $widget ) {
             foreach ( $profiles as $profile ) {
                 $t_out .= '<li>
                 <img src="' . $smpimagepath.$profile['logo'] . '"
                      alt="' . $keyword . ' ' . $profile['site'] . '" />
-                <a href="' . $profile['profileUrl'] . '" title="' . $keyword . '">
-                ' . $profile['site'] . '</a></li>';
+                <a href="' . $profile['profileUrl'] . '" title="' . $keyword . '"';
+                if ( $relNofollow == 'yes' ) {
+                    $t_out .= ' rel="nofollow"';
+                }
+                $t_out .= '>' . $profile['site'] . '</a></li>';
             }
         } else {
             foreach ( $profiles as $profile ) {
                 $t_out .= '<li>
                 <img src="' . $smpimagepath.$profile['logo'] . '"
                      alt="' . $keyword . ' ' . $profile['site'] . '" />
-                <a href="' . $profile['profileUrl'] . '" title="' . $keyword . '">
-                ' . $keyword . '</a> at ' . $profile['site'] . '</li>';
+                <a href="' . $profile['profileUrl'] . '" title="' . $keyword . '"';
+                if ( $relNofollow == 'yes' ) {
+                    $t_out .= ' rel="nofollow"';
+                }
+                $t_out .= '>' . $keyword . '</a> at ' . $profile['site'] . '</li>';
             }
         }
         $t_out .= '</ul>';
@@ -587,10 +631,15 @@ function smpCreatePage($widget=false)
         if ( $giveCredit == "yes" ) {
             $t_out .= '<div style="text-align:right;">
                    <p style="font-size:90%;">Created by
-                   <a href="http://www.norton42.org.uk" title="Philip Norton">
-                   Philip Norton</a></p></div>';
+                   <a href="http://www.norton42.org.uk" title="Philip Norton"';
+            if ( $relNofollow == 'yes' ) {
+                $t_out .= ' rel="nofollow"';
+            }
+            $t_out .= '>Philip Norton</a></p></div>';
         }
-        $t_out .= '</div>';
+        if( !$widget ) {
+            $t_out .= '</div>';
+        }
 
         // Ampersand fix
         $t_out = str_replace("&amp;amp;", "&amp;", $t_out);
@@ -624,9 +673,12 @@ function smpGeneratePage( $content )
 *
 * @return void
 */
-function smpWidget() {
-    echo '<h2 class="widgettitle">'.__('Social Media').'</h2>';
+function smpWidget($args) {
+    extract($args);
+    echo $before_widget;
+    echo $before_title . __('Social Media') . $after_title;
     echo smpCreatePage(true);
+    echo $after_widget;
 }
 
 /**
@@ -636,12 +688,11 @@ function smpWidget() {
 */
 function initSocialMedia() {
     register_sidebar_widget(__('Social Media Page'), 'smpWidget');
+    global $wp_registered_widgets;
+    $wp_registered_widgets[sanitize_title(__('Social Media Page'))]['description'] = 'Social Media Page Plugin Widget';
 }
 
-
 add_action("plugins_loaded", "initSocialMedia");
-
-
 
 register_activation_hook(__FILE__, 'smpInstall');
 

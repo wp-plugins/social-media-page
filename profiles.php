@@ -14,6 +14,10 @@ $sql[] = "UPDATE " . $table_prefix . "socialmediaprofiles
           SET site = 'Last.fm'
           WHERE site = 'Last_fm'
           LIMIT 1;";
+$sql[] = "UPDATE " . $table_prefix . "socialmediaprofiles
+          SET site = 'Friendfeed'
+          WHERE site = 'Frendfeed'
+          LIMIT 1";
 
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
@@ -66,7 +70,7 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'facebook.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
-          VALUES('Frendfeed',
+          VALUES('Friendfeed',
                  'http://friendfeed.com',
                  'http://friendfeed.com/{username}',
                  8,
