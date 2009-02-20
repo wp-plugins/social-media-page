@@ -1,4 +1,12 @@
 <?php
+/**
+ * profiles.php
+ *
+ * Sets up or updates the social media profiles for the social media page plugin.
+ *
+ * For use with Social Media Page Plugin version 1.4
+ *
+ */
 // Update old versions
          //youtube update
 $sql[] = "UPDATE " . $table_prefix . "socialmediaprofiles
@@ -18,7 +26,11 @@ $sql[] = "UPDATE " . $table_prefix . "socialmediaprofiles
           SET site = 'Friendfeed'
           WHERE site = 'Frendfeed'
           LIMIT 1";
+$sql[] = "DELETE FROM " . $table_prefix . "socialmediaprofiles
+          WHERE url = 'http://pownce.com/'
+          LIMIT 1";
 
+// Add profiles
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('StumbleUpon',
@@ -42,11 +54,11 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'plurk.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
-          VALUES('Pownce',
-                 'http://pownce.com/',
-                 'http://pownce.com/{username}/',
+          VALUES('Ma.gnolia',
+                 'http://ma.gnolia.com/',
+                 'http://ma.gnolia.com/people/{username}/',
                  4,
-                 'pownce.png');";
+                 'magnolia.png');";                 
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('Flickr',
@@ -880,7 +892,6 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'http://de.woobby.com/user/profile?username={username}',
                  121,
                  'woobby.png');";
-
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('xerpi',
@@ -896,7 +907,6 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'http://www.xing.com/profile/{username}',
                  123,
                  'xing.png');";
-
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('YiGG',
@@ -927,9 +937,44 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'blogger.png');";
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
-          VALUES('Ma.gnolia',
-                 'http://ma.gnolia.com/',
-                 'http://ma.gnolia.com/people/{username}/',
+          VALUES('Goodreads',
+                 'http://www.goodreads.com/',
+                 'http://www.goodreads.com/profile/{userid}/',
                  128,
-                 'magnolia.png');";
-?>
+                 'goodreads.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('Disqus',
+                 'http://www.disqus.com/',
+                 'http://www.disqus.com/people/{username}/',
+                 129,
+                 'disqus.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('Hi5',
+                 'http://www.hi5.com/',
+                 'http://www.hi5.com/friend/p{userid}--{username}--html',
+                 130,
+                 'hi5.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('ohloh',
+                 'http://www.ohloh.net/',
+                 'http://www.ohloh.net/accounts/{username}',
+                 131,
+                 'ohloh.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('Writing.com',
+                 'http://www.writing.com/',
+                 'http://www.writing.com/main/view_item/user_id/{username}',
+                 132,
+                 'writing.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('deviantART',
+                 'http://www.deviantart.com/',
+                 'http://{username}.deviantart.com/',
+                 133,
+                 'deviantart.png');";			 
+			 
