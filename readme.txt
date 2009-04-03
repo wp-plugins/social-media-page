@@ -4,7 +4,7 @@ Donate link: http://www.norton42.org.uk/
 Tags: social media page,social media,social,media,page,profile,profiles
 Requires at least: 2.6.3
 Tested up to: 2.7.1
-Stable tag: 1.4
+Stable tag: 1.5
 
 The Social Media Page Wordpress plugin will add a list of links to your social media profiles on a page or post of your choice.
 
@@ -17,6 +17,15 @@ Rather than getting you to enter all of your social media profiles as URLs the p
 When the links are displayed on the page it will use a keyword of your choice as the text for the link.
 
 With this plugin you can create a central base for any social media strategy.
+
+= Changes in version 1.5 =
+
+1. Added Blip.fm to profile list.
+1. Added Blip.tv to profile list.
+1. Added Microsoft Live to profile list.
+1. Added WAYN to profile list.
+1. Added Facebook Group link to profile list.
+1. Added Facebook Page link to profile list.
 
 = Changes in version 1.4 =
 

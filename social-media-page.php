@@ -15,14 +15,14 @@
  * Plugin URI: http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html
  * Description: Generates a list of social media profiles on a given page or as a widget. <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social Media Page plugin homepage">Social Media Page plugin homepage</a>.
  * Author: Philip Norton
- * Version: 1.4
+ * Version: 1.5
  * Author URI: http://www.norton42.org.uk/
  *
  */
  /**
   * Version number.
   */
-$smpVer      = '1.4';
+$smpVer      = '1.5';
 
  /**
   * Image path.
@@ -33,7 +33,7 @@ $smpimagepath = WP_CONTENT_URL . '/plugins/' .
  /**
   * Normal profile exclusions.
   */				
-$exclusions   = array('Facebook', 'Wis.dm', 'Hi5');
+$exclusions   = array('Facebook', 'Wis.dm', 'Hi5', 'Facebook Page');
 
  /**
   * Page title.
@@ -203,11 +203,14 @@ function smpSaveProfile($siteID, $profile, $sortOrder=0)
     } else {
         $sql .= " SET profileUrl =
                 REPLACE(
-                        REPLACE(profileTemplate,
-                                '{userid}',
-                                '" . $profile . "'),
-                        '{username}',
-                        '" . $profile . "')";
+						REPLACE(
+								REPLACE(profileTemplate,
+										'{userid}',
+										'" . $profile . "'),
+								'{username}',
+								'" . $profile . "'),
+						'{groupid}',
+						'" . $profile . "')";
     };
     if ( $sortOrder > 0 ) {
         $sql .= ", sortOrder = '".$sortOrder."'";
@@ -242,6 +245,40 @@ function smpSaveFacebookProfile($siteID, $name, $userid, $sortOrder=0)
                                 '" . $name . "'),
                         '{userid}',
                         '" . $userid . "')";
+    };
+    if ( $sortOrder != 0 ) {
+        $sql .= ", sortOrder = '".$sortOrder."'";
+    }
+    $sql .= " WHERE id = '" . $siteID . "';";
+    $wpdb->query($sql);
+}
+
+/**
+ * Save Facebook page information
+ *
+ * @param integer $siteID    The ID of the site to be updated - this should be the ID
+ *                           for Facebook
+ * @param string  $name      A string containing the username to be used in the save.
+ * @param integer $pageid    The ID of the page to be used in the save.
+ * @param integer $sortOrder An optional integer that allows the position of Facebook
+ *                           to be set.
+ *
+ * @return void
+ */
+function smpSaveFacebookPage($siteID, $name, $pageid, $sortOrder=0)
+{
+    global $wpdb;
+    $tp  = $wpdb->prefix;
+    $sql = "UPDATE " . $tp . "socialmediaprofiles";
+    if ( $name == '' && $pageid == '' ) {
+        $sql .= " SET profileUrl = ''";
+    } else {
+        $sql .= " SET profileUrl =
+                REPLACE(REPLACE(profileTemplate,
+                                '{pagename}',
+                                '" . $name . "'),
+                        '{pageid}',
+                        '" . $pageid . "')";
     };
     if ( $sortOrder != 0 ) {
         $sql .= ", sortOrder = '".$sortOrder."'";
@@ -414,7 +451,15 @@ function smpOptionsPage()
 					smpSaveHi5Profile($_POST['hi5id'],
 										   $hi5username,
 										   $hi5userid,
-										   $sortOrder+1);		
+										   $sortOrder+1);
+			} elseif ( $_POST['facebookpageid'] == $siteID ) {
+				// Save Facebook information
+				$facebookpagename   = $wpdb->escape($_POST['facebookpagename']);
+				$facebookpageid = $wpdb->escape($_POST['facebookpagepageid']);
+				smpSaveFacebookPage($_POST['facebookpageid'],
+										   $facebookpagename,
+										   $facebookpageid,
+										   $sortOrder+1);								   
 			} else {
 				$value = $wpdb->escape($_POST[$siteID]);
 				smpSaveProfile($siteID, $value, $sortOrder+1);
@@ -531,7 +576,7 @@ function smpOptionsPage()
             break;
         }
         if ( !in_array($profile['site'], $exclusions) ) {
-            $pattern = '#' . str_replace('{username}',
+            $pattern = '#' . str_replace(array('{username}', '{userid}', '{groupid}'),
                                          '(.*)',
                                          str_replace('?',
 										             '\?',
@@ -585,6 +630,37 @@ function smpOptionsPage()
                        type="hidden"
                        value="<?php echo $profile['id']; ?>" />
                 </li><?php
+            } elseif ( $profile['site'] == 'Facebook Page' ) {
+                // add Facebook Page
+                $pattern = str_replace('{pagename}',
+                                       '(.*)',
+                                       $profile['profileTemplate']);
+                $pattern = '#'.str_replace('{pageid}', '(.*)', $pattern).'#i';
+                preg_match($pattern, $profile['profileUrl'], $fixedProfile);
+                $profile['profileUrl'] = $fixedProfile[1];
+                ?>
+				<li class="smp-sortable" id="<?php echo $profile['id']; ?>">
+				<input type="hidden" name="smp-id[]" value="<?php echo $profile['id']; ?>" />
+                <span class="smp-sortable-handle smpLogoSpan">
+                <img src="../wp-content/plugins/social-media-page/images/<?php
+                          echo $profile['logo']; ?>"
+                     alt="<?php echo $profile['site']; ?>" />
+                <?php echo $profile['site'].$additional; ?></span>
+                <em>Page Name</em> <input name="facebookpagename"
+                       type="text"
+                       size="30"
+                       value="<?php echo $fixedProfile[1]; ?>" />
+                <?php echo $profile['profileTemplate']; ?>
+                <br />
+                <em id="smpFacebookId">Page ID</em>
+                <input name="facebookpagepageid"
+                       type="text"
+                       size="30"
+                       value="<?php echo $fixedProfile[2]; ?>" />
+                <input name="facebookpageid"
+                       type="hidden"
+                       value="<?php echo $profile['id']; ?>" />
+                </li><?php				
             } elseif ( $profile['site'] == 'Wis.dm' ) {
                 // add Wis.dm
                 $pattern = str_replace('{username}',
@@ -617,7 +693,7 @@ function smpOptionsPage()
                        value="<?php echo $profile['id']; ?>" />
                 </li><?php
             } elseif ( $profile['site'] == 'Hi5' ) {
-                // add Wis.dm
+                // add Hi5
                 $pattern = str_replace('{username}',
                                        '(.*)',
                                        $profile['profileTemplate']);

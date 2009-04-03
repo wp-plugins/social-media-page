@@ -4,7 +4,7 @@
  *
  * Sets up or updates the social media profiles for the social media page plugin.
  *
- * For use with Social Media Page Plugin version 1.4
+ * For use with Social Media Page Plugin version 1.5
  *
  */
 // Update old versions
@@ -977,4 +977,45 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'http://{username}.deviantart.com/',
                  133,
                  'deviantart.png');";			 
-			 
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('Blip.fm',
+                 'http://blip.fm/',
+                 'http://blip.fm/{username}/',
+                 134,
+                 'blipfm.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('Blip.tv',
+                 'http://blip.tv/',
+                 'http://blip.tv/{username}/',
+                 135,
+                 'bliptv.png');";				 
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('Windows Live',
+                 'http://profile.live.com/',
+                 'http://{userid}.profile.live.com/ ',
+                 136,
+                 'livecom.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('WAYN',
+                 'http://www.wayn.com/',
+                 'http://www.wayn.com/waynprofile.html?member_key={userid} ',
+                 137,
+                 'wayncom.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('Facebook Group',
+                 'http://www.facebook.com/',
+                 'http://www.facebook.com/group.php?gid={groupid}',
+                 138,
+                 'facebook.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('Facebook Page',
+                 'http://www.facebook.com/',
+                 'http://www.facebook.com/pages/{pagename}/{pageid}',
+                 139,
+                 'facebook.png');";
