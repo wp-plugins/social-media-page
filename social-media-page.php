@@ -805,12 +805,6 @@ function smpOptionsPage()
 	if ( $sortOrder == 'sortOrder' ) {
 	?>
     <script type="text/javascript">
-        //Position.includeScrollOffsets = true;
-        //Sortable.create('containersmpSiteWrapper',{
-        //    tag: 'li',
-        //    scroll: window
-        //});
-		
 		jQuery(function() {
 			jQuery("#containersmpSiteWrapper").sortable({
 				placeholder: 'smp-sortable'
