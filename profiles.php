@@ -4,7 +4,7 @@
  *
  * Sets up or updates the social media profiles for the social media page plugin.
  *
- * For use with Social Media Page Plugin version 1.5
+ * For use with Social Media Page Plugin version 1.6
  *
  */
 // Update old versions
@@ -1019,3 +1019,17 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'http://www.facebook.com/pages/{pagename}/{pageid}',
                  139,
                  'facebook.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('LinkedIn Company',
+                 'http://www.linkedin.com/',
+                 'http://www.linkedin.com/companies/{lkdncompanynameid}/{lkdncompanyname}',
+                 140,
+                 'linkedin.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('imeem',
+                 'http://www.imeem.com/',
+                 'http://www.imeem.com/{username}',
+                 141,
+                 'imeem.png');";				 

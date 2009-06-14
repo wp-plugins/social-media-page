@@ -15,14 +15,14 @@
  * Plugin URI: http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html
  * Description: Generates a list of social media profiles on a given page or as a widget. <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social Media Page plugin homepage">Social Media Page plugin homepage</a>.
  * Author: Philip Norton
- * Version: 1.5
+ * Version: 1.6
  * Author URI: http://www.norton42.org.uk/
  *
  */
  /**
   * Version number.
   */
-$smpVer      = '1.5';
+$smpVer      = '1.6';
 
  /**
   * Image path.
@@ -33,12 +33,12 @@ $smpimagepath = WP_CONTENT_URL . '/plugins/' .
  /**
   * Normal profile exclusions.
   */				
-$exclusions   = array('Facebook', 'Wis.dm', 'Hi5', 'Facebook Page');
+$exclusions   = array('Facebook', 'Wis.dm', 'Hi5', 'Facebook Page', 'LinkedIn Company');
 
  /**
   * Page title.
   */
-$title = __( 'Social Media Page Plugin' );
+$smp_title = __( 'Social Media Page Plugin' );
 
 /**
 * Create smp_keyword option if it doesn't exist.  This option is used to store
@@ -356,13 +356,47 @@ function smpSaveHi5Profile($siteID, $username, $userid, $sortOrder=0)
 }
 
 /**
+ * Save LinkedIn Company profile information
+ *
+ * @param integer $siteID       The ID of the site to be updated - this should be the ID
+ *                              for LinkedIn Company
+ * @param string  $companyname  A string containing the company name to be used in the save.
+ * @param integer $companyid    The ID of the company to be used in the save.
+ * @param integer $sortOrder    An optional integer that allows the position of LinkedIn Company
+ *                              to be set.
+ *
+ * @return void
+ */
+function smpSaveLinkedInCompanyProfile($siteID, $companyname, $companyid, $sortOrder=0)
+{
+    global $wpdb;
+    $tp  = $wpdb->prefix;
+    $sql = "UPDATE " . $tp . "socialmediaprofiles";
+    if ( $companyname == '' && $companyid == '' ) {
+        $sql .= " SET profileUrl = ''";
+    } else {
+        $sql .= " SET profileUrl =
+                REPLACE(REPLACE(profileTemplate,
+                                '{lkdncompanyname}',
+                                '" . $companyname . "'),
+                        '{lkdncompanynameid}',
+                        '" . $companyid . "')";
+    };
+    if ( $sortOrder != 0 ) {
+        $sql .= ", sortOrder = '".$sortOrder."'";
+    }
+    $sql .= " WHERE id = '" . $siteID . "';";
+    $wpdb->query($sql);
+}
+
+/**
  * Generate options form and save options.
  *
  * @return void
  */
 function smpOptionsPage()
 {
-    global $smpVer, $wpdb;
+    global $smp_title, $smpVer, $wpdb;
 
 	// update orders
 	if ( isset($_POST['smp_sortOrder']) ) {
@@ -459,7 +493,15 @@ function smpOptionsPage()
 				smpSaveFacebookPage($_POST['facebookpageid'],
 										   $facebookpagename,
 										   $facebookpageid,
-										   $sortOrder+1);								   
+										   $sortOrder+1);
+			} elseif ( $_POST['lkdncompanyid'] == $siteID ) {
+				// Save LinkedIn Company information   
+				$lkdncompanyname   = $wpdb->escape($_POST['lkdncompanyname']);
+				$lkdncompanynameid = $wpdb->escape($_POST['lkdncompanynameid']);
+				smpSaveLinkedInCompanyProfile($_POST['lkdncompanyid'],
+										   $lkdncompanyname,
+										   $lkdncompanynameid,
+										   $sortOrder+1);
 			} else {
 				$value = $wpdb->escape($_POST[$siteID]);
 				smpSaveProfile($siteID, $value, $sortOrder+1);
@@ -472,7 +514,7 @@ function smpOptionsPage()
     };
     ?>
     <div class="wrap">
-    <h2>Social Media Page Plugin v <?php echo $smpVer; ?></h2>
+    <h2><?php echo $smp_title; ?> v <?php echo $smpVer; ?></h2>
 	<p>Setup | <a href="<?php echo $_SERVER["REQUEST_URI"]; ?>&help=help">Help</a></p>
 	
     <form method="post" action="<?php echo $_SERVER["REQUEST_URI"]; ?>">
@@ -723,6 +765,37 @@ function smpOptionsPage()
                        type="hidden"
                        value="<?php echo $profile['id']; ?>" />
                 </li><?php
+            } elseif ( $profile['site'] == 'LinkedIn Company' ) {
+                // add LinkedIn Company 
+                $pattern = str_replace('{lkdncompanynameid}',
+                                       '(.*)',
+                                       $profile['profileTemplate']);
+                $pattern = '#'.str_replace('{lkdncompanyname}', '(.*)', $pattern).'#i';
+                preg_match($pattern, $profile['profileUrl'], $fixedProfile);
+                $profile['profileUrl'] = $fixedProfile[1];
+                ?>
+				<li class="smp-sortable" id="<?php echo $profile['id']; ?>">
+				<input type="hidden" name="smp-id[]" value="<?php echo $profile['id']; ?>" />				
+                <span class="smp-sortable-handle smpLogoSpan">
+                <img src="../wp-content/plugins/social-media-page/images/<?php
+                          echo $profile['logo']; ?>"
+                     alt="<?php echo $profile['site']; ?>" />
+                <?php echo $profile['site'].$additional; ?></span>
+                <em>Company ID</em> <input name="lkdncompanynameid"
+                       type="text"
+                       size="30"
+                       value="<?php echo $profile['profileUrl']; ?>" />
+                <?php echo $profile['profileTemplate']; ?>
+                <br />
+                <em id="smpLinkedInCompanyId">Company Name</em>
+                <input name="lkdncompanyname"
+                       type="text"
+                       size="30"
+                       value="<?php echo $fixedProfile[2]; ?>" />
+                <input name="lkdncompanyid"
+                       type="hidden"
+                       value="<?php echo $profile['id']; ?>" />
+                </li><?php
             }
         }
     }
@@ -732,11 +805,18 @@ function smpOptionsPage()
 	if ( $sortOrder == 'sortOrder' ) {
 	?>
     <script type="text/javascript">
-        Position.includeScrollOffsets = true;
-        Sortable.create('containersmpSiteWrapper',{
-            tag: 'li',
-            scroll: window
-        });
+        //Position.includeScrollOffsets = true;
+        //Sortable.create('containersmpSiteWrapper',{
+        //    tag: 'li',
+        //    scroll: window
+        //});
+		
+		jQuery(function() {
+			jQuery("#containersmpSiteWrapper").sortable({
+				placeholder: 'smp-sortable'
+			});
+			jQuery("#containersmpSiteWrapper").disableSelection();
+		});
     </script>
 	<?php 
 	}
@@ -779,15 +859,6 @@ function smpAddAdminHeader()
     span.smpLogoSpan img{
        padding:3px;
        margin:0;
-    }
-    em#smpFacebookId{
-        margin:0 16px 0 150px;
-    }
-    em#smpWisdmId{
-       margin:0 16px 0 152px;
-    }
-    em#smphi5Id{
-       margin:0 16px 0 152px;
     }
 	#containersmpSiteWrapper li span.smp-sortable-handle{
 		cursor:move;
@@ -984,5 +1055,5 @@ add_action('admin_head', 'smpAddAdminHeader');
 
 // include scripts for drag and drop, but only in admin section
 if ( is_admin() ) {
-    wp_enqueue_script("scriptaculous-dragdrop");
+    wp_enqueue_script("jquery-ui-sortable");
 }

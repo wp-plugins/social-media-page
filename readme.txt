@@ -3,8 +3,8 @@ Contributors: philipnorton42
 Donate link: http://www.norton42.org.uk/
 Tags: social media page,social media,social,media,page,profile,profiles
 Requires at least: 2.6.3
-Tested up to: 2.7.1
-Stable tag: 1.5
+Tested up to: 2.8
+Stable tag: 1.6
 
 The Social Media Page Wordpress plugin will add a list of links to your social media profiles on a page or post of your choice.
 
@@ -17,6 +17,13 @@ Rather than getting you to enter all of your social media profiles as URLs the p
 When the links are displayed on the page it will use a keyword of your choice as the text for the link.
 
 With this plugin you can create a central base for any social media strategy.
+
+= Changes in version 1.6 =
+
+1. Fixed bug that overrides the title of other pages within Wordpress.
+1. Fixed bug that causes JavaScript to break in the admin section.
+1. Added LinkedIn Company profile page to profile list.
+1. Added imeem to profile list.
 
 = Changes in version 1.5 =
 
