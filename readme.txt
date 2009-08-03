@@ -3,7 +3,7 @@ Contributors: philipnorton42
 Donate link: http://www.norton42.org.uk/
 Tags: social media page,social media,social,media,page,profile,profiles
 Requires at least: 2.6.3
-Tested up to: 2.8
+Tested up to: 2.8.2
 Stable tag: 1.7
 
 The Social Media Page Wordpress plugin will add a list of links to your social media profiles on a page or post of your choice.
