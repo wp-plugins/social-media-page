@@ -4,7 +4,7 @@
  *
  * Sets up or updates the social media profiles for the social media page plugin.
  *
- * For use with Social Media Page Plugin version 1.6
+ * For use with Social Media Page Plugin version 1.7
  *
  */
 // Update old versions
@@ -29,6 +29,11 @@ $sql[] = "UPDATE " . $table_prefix . "socialmediaprofiles
 $sql[] = "DELETE FROM " . $table_prefix . "socialmediaprofiles
           WHERE url = 'http://pownce.com/'
           LIMIT 1";
+// Update Blip.tv
+$sql[] = "UPDATE " . $table_prefix . "socialmediaprofiles
+          SET profileTemplate = 'http://{username}.blip.tv/'
+          WHERE site = 'Blip.tv'
+          LIMIT 1;";
 
 // Add profiles
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
@@ -988,7 +993,7 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
           site,url,profileTemplate,sortOrder,logo)
           VALUES('Blip.tv',
                  'http://blip.tv/',
-                 'http://blip.tv/{username}/',
+                 'http://{username}.blip.tv/',
                  135,
                  'bliptv.png');";				 
 $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
@@ -1032,4 +1037,53 @@ $sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
                  'http://www.imeem.com/',
                  'http://www.imeem.com/{username}',
                  141,
-                 'imeem.png');";				 
+                 'imeem.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('12seconds',
+                 'http://12seconds/',
+                 'http://12seconds.tv/channel/{username}',
+                 142,
+                 '12secondstv.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('Behance',
+                 'http://www.behance.net/',
+                 'http://www.behance.net/{username}',
+                 143,
+                 'behancenet.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('LibraryThing',
+                 'http://www.librarything.com/',
+                 'http://www.librarything.com/profile/{username}',
+                 144,
+                 'librarythingcom.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('LibraryThing Author',
+                 'http://www.librarything.com/',
+                 'http://www.librarything.com/author/{username}',
+                 145,
+                 'librarythingcom.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('Facebook Profile',
+                 'http://www.facebook.com/',
+                 'http://www.facebook.com/{username}',
+                 146,
+                 'facebook.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('Hyves',
+                 'http://www.hyves.co.uk/',
+                 'http://{username}.hyves.co.uk/',
+                 147,
+                 'hyvescom.png');";
+$sql[] = "INSERT INTO " . $table_prefix . "socialmediaprofiles(
+          site,url,profileTemplate,sortOrder,logo)
+          VALUES('ClaimID',
+                 'http://claimid.com/',
+                 'http://claimid.com/{username}',
+                 148,
+                 'claimidcom.png');";

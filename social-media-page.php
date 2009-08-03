@@ -15,14 +15,14 @@
  * Plugin URI: http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html
  * Description: Generates a list of social media profiles on a given page or as a widget. <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social Media Page plugin homepage">Social Media Page plugin homepage</a>.
  * Author: Philip Norton
- * Version: 1.6
+ * Version: 1.7
  * Author URI: http://www.norton42.org.uk/
  *
  */
  /**
   * Version number.
   */
-$smpVer      = '1.6';
+$smpVer      = '1.7';
 
  /**
   * Image path.
@@ -162,7 +162,7 @@ function chmod_R($path, $filemode) {
     while ( $file = readdir($dh) ) {
         if ( $file != '.' && $file != '..' ) {
             $fullpath = $path.'/'.$file;
-            if( !is_dir($fullpath) ) {
+            if ( !is_dir($fullpath) ) {
               if ( !chmod($fullpath, $filemode) ) {
                  return false;
               }
@@ -439,13 +439,13 @@ function smpOptionsPage()
         update_option('smp_keyword', trim($wpdb->escape((string)$_POST["smp_keyword"])));
         if ( isset($_POST["smp_giveCredit"]) ) {
           update_option('smp_giveCredit', 'yes');
-        }else{
+        } else {
           update_option('smp_giveCredit', 'no');
         }
 
         if ( isset($_POST["smp_relNoFollow"]) ) {
           update_option('smp_relNoFollow', 'yes');
-        }else{
+        } else {
           update_option('smp_relNoFollow', 'no');
         }
 
@@ -456,7 +456,7 @@ function smpOptionsPage()
           } else {
               update_option('smp_widgetTitle', $widgetTitle);
           }
-        }else{
+        } else {
           update_option('smp_widgetTitle', 'Social Media');
         }
 
