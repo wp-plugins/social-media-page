@@ -3,19 +3,26 @@
 if (count($profiles) > 0) {
   if ($outputStyle == 'images') {
     foreach ($profiles as $profile) {
-      $t_out .= '<a href="' . $profile['profileUrl'] . '" title="' . $keyword . '"';
+      $t_out .= '<a href="' . $profile['profileUrl'] . '" title="' . $globalkeyword . '"';
       $t_out .= $relNofollow;
       $t_out .= $linkTargetWindow;
-      $t_out .= '><img src="' . $smpimagepath.$profile['logo'] . '" alt="' . $keyword . ' ' . $profile['site'] . '" /></a>';
+      $t_out .= '><img src="' . $smpimagepath.$profile['logo'] . '" alt="' . $globalkeyword . ' ' . $profile['site'] . '" /></a>';
     }
   } else {
     $t_out .= '<ul>';
     foreach ($profiles as $profile) {
-      $t_out .= '<li><img src="' . $smpimagepath.$profile['logo'] . '" alt="' . $keyword . ' ' . $profile['site'] . '" />
-                     <a href="' . $profile['profileUrl'] . '" title="' . $keyword . '"';
+      $t_out .= '<li><img src="' . $smpimagepath.$profile['logo'] . '" alt="' . $globalkeyword . ' ' . $profile['site'] . '" />
+                     <a href="' . $profile['profileUrl'] . '" title="' . $globalkeyword . '"';
       $t_out .= $relNofollow;
       $t_out .= $linkTargetWindow;
-      $t_out .= '>' . $keyword . '</a> at ' . $profile['site'] . '</li>';
+      $t_out .= '>';
+      if ($profile['keyword'] != '') {
+          $t_out .= $profile['keyword'];
+      } elseif ($globalkeyword != '') {
+          $t_out .= $globalkeyword;
+      }
+
+    $t_out .= '</a> at ' . $profile['site'] . '</li>';
     }
     $t_out .= '</ul>';
   }
