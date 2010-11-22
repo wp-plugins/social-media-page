@@ -1,5 +1,8 @@
-<h3>Social Media Page Plugin</h3>
-<p><a href="<?php echo str_replace('&help=help', '', $_SERVER["REQUEST_URI"]); ?>">Setup</a> | Help</p>
+<?php
+    if (!current_user_can('edit_posts'))  {
+        wp_die( __('You do not have sufficient permissions to access this page.') );
+    }
+?><h3>Social Media Page Plugin</h3>
 <h4>Creating A Social Media Page</h4>
 <p>To add this to your site fill out some profile information using the form
 below and put the following to a page or post:<br />
@@ -32,7 +35,7 @@ after this tag.</p>
 
 <h4>Updating</h4>
 <p>When updating to a new version of the plugin you can either use the Wordpress built in updater or upload the files manually. However, if you upload the files manually you <strong>MUST</strong> deactivate and reactive the plugin in order to properly update the plugin.</p>
-
+                                                     
 <h4>More Information</h4>
 <p>For more informaiton about this plugin, or to report bugs and suggestions go
 to <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social media page plugin">social media page plugin</a> page at <a href="http://www.norton42.org.uk/" title="www.norton42.org.uk">www.norton42.org.uk</a>.</p>

@@ -8,1046 +8,595 @@
  * @package  WordPress
  * @author   Philip Norton <philipnorton42@gmail.com>
  * @license  http://www.gnu.org/copyleft/gpl.html GNU General Public License
- * @link     http://www.norton42.org.uk/
+ * @link     http://www.hashbangcode.com/
  *
  *
  * Plugin Name: Social Media Page
- * Plugin URI: http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html
+ * Plugin URI: http://www.hashbangcode.com/
  * Description: Generates a list of social media profiles on a given page or as a widget. <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social Media Page plugin homepage">Social Media Page plugin homepage</a>.
  * Author: Philip Norton
- * Version: 1.7
- * Author URI: http://www.norton42.org.uk/
+ * Version: 2.1
+ * Author URI: http://www.hashbangcode.com/
  *
  */
- /**
-  * Version number.
-  */
-$smpVer      = '1.7';
-
- /**
-  * Image path.
-  */
-$smpimagepath = WP_CONTENT_URL . '/plugins/' .
-                plugin_basename(dirname(__FILE__)) . '/images/';
-				
- /**
-  * Normal profile exclusions.
-  */				
-$exclusions   = array('Facebook', 'Wis.dm', 'Hi5', 'Facebook Page', 'LinkedIn Company');
-
- /**
-  * Page title.
-  */
-$smp_title = __( 'Social Media Page Plugin' );
 
 /**
-* Create smp_keyword option if it doesn't exist.  This option is used to store
-* the keyword that will be used to link to the profiles entered.
-*/
-add_option('smp_keyword', "");
+ * Include the SocialMediaPage class, see file info for more detail.
+ */
+require 'SocialMediaPage.php';
 
 /**
-* Create smp_giveCredit option if it doesn't exist.  This option is used to
-* store a boolean value regarding the displaying of a link back to the author.
-*/
-add_option('smp_giveCredit', "yes");
+ * Include the SocialMediaPageUpdae class, see file info for more detail.
+ */
+require 'SocialMediaPageUpdate.php';
 
 /**
-* Create smp_relNoFollow option if it doesn't exist.  This option is used to
-* store a boolean value regarding the addition of rel="nofollow" to the links.
-*/
-add_option('smp_relNoFollow', "no");
+ * Version number.
+ */
+$smpVer = '2.1';
 
 /**
-* Create smp_widgetTitle option if it doesn't exist.  This option is used to
-* store the title of the Widget if the user wants to change it.
-*/
-add_option('smp_widgetTitle', "Social Media");
+ * Image path.
+ */
+$smpimagepath = WP_CONTENT_URL . '/plugins/' . plugin_basename(dirname(__FILE__)) . '/images/';
 
 /**
-* Create smp_sortOrder option if it doesn't exist.  This option is used to
-* decide on the order that the items will be sorted in.
-*/
-add_option('smp_sortOrder', "sortOrder");
+ * Page title.
+ */
+$smp_title = __('Social Media Page Plugin');
 
 /**
-* Create smp_sortOrder option if it doesn't exist.  This option is used to
-* decide on the order that the items will be sorted in.
-*/
-add_option('smp_outputStyle', "list");
-
-/**
-* Add options page
-*
-* @return void
-*/
-function smpAddOptionPages()
+ * Add options page
+ */
+function smp_add_option_pages()
 {
-    if ( function_exists('add_options_page') ) {
-        if ( isset($_GET['help']) ) {
-			add_options_page(__('Social Media Page'),
-                         __('Social Media Page'),
-                         8,
-                         __FILE__,
-                         'helpFile');
-		} else {
-			add_options_page(__('Social Media Page'),
-                         __('Social Media Page'),
-                         8,
-                         __FILE__,
-                         'smpOptionsPage');
-		}
-    }
-}
-
-function helpFile()
-{
-	include('smp-help.php');
+    // Add menu items.
+    add_menu_page(__('Social Media Page'), __('SMP'), 'edit_posts', __FILE__, 'smp_options_page');
+    add_submenu_page(__FILE__, __('Help'), __('Help'), 'edit_posts', dirname(__FILE__) . '/smp-help.php');
+    add_submenu_page(__FILE__, __('Update'), __('Update'), 'manage_options', dirname(__FILE__) . '/smp-update.php');
 }
 
 /**
-* Install plugin and set default values.
-*
-* @return void
-*/
-function smpInstall()
-{
-    global $table_prefix, $wpdb;
-
-    // never used Social Media Page before
-    $first_time = $wpdb->get_var("SHOW TABLES LIKE '".
-                                 $table_prefix.
-                                 "socialmediaprofiles'")
-                  != $table_prefix . "socialmediaprofiles";
-    $sql   = array();
-    if ( $first_time ) {
-        $sql[] = "CREATE TABLE " . $table_prefix . "socialmediaprofiles (
-           id int(10) unsigned NOT NULL auto_increment,
-           site varchar(200) collate latin1_general_ci NOT NULL,
-           url varchar(200) collate latin1_general_ci NOT NULL,
-           profileUrl varchar(200) collate latin1_general_ci default NULL,
-           profileTemplate varchar(200) collate latin1_general_ci NOT NULL,
-           sortOrder int(10) unsigned NOT NULL,
-           logo varchar(100) collate latin1_general_ci NOT NULL,
-           PRIMARY KEY  (id),
-           UNIQUE KEY site (site)
-        )";
-    }
-    // try to install all of the profiles.
-    include 'profiles.php';
-    foreach ( $sql as $qry ) {
-        $wpdb->query($qry);
-    }
-
-    // Get this directory and all sub directories and correct permissions.
-    // This is needed as Wordpress plugin updater sometimes causes permission
-    // issues.
-    chmod_R(dirname(__FILE__), 0775);
-}
-
-/**
- * A recursive function that runs through a directory and all sub directories
- * and sets the permissions to a defined value.
+ * Display and run actions on the crete, update and delete pages.
  *
- * @param string $path     The starting directory.
- * @param string $filemode The permission to set the directories to.
- *
- * @return boolean True on sucess, false on failure.
- **/
-function chmod_R($path, $filemode) {
-    if ( !is_dir($path) ) {
-       return chmod($path, $filemode);
+ * @global object $wpdb         The Wordpress database object.
+ * @global string $smpimagepath The image path.
+ */
+function smp_crud_pages()
+{
+    global $wpdb, $smpimagepath;
+
+    if (!current_user_can('edit_posts'))  {
+        wp_die( __('You do not have sufficient permissions to access this page.') );
     }
-    $dh = opendir($path);
-    while ( $file = readdir($dh) ) {
-        if ( $file != '.' && $file != '..' ) {
-            $fullpath = $path.'/'.$file;
-            if ( !is_dir($fullpath) ) {
-              if ( !chmod($fullpath, $filemode) ) {
-                 return false;
-              }
-            } else {
-              if ( !chmod_R($fullpath, $filemode) ) {
-                 return false;
-              }
-            }
+
+    if ($_GET['action'] == 'add1') {
+        check_admin_referer('social_media_page_plugin_add_profile1');
+        include('smp-addprofile1.php');
+    } elseif ($_GET['action'] == 'add2') {
+        check_admin_referer('social_media_page_plugin_add_profile2');
+        include('smp-addprofile2.php');
+    } elseif ($_GET['action'] == 'edit') {
+        check_admin_referer('social_media_page_plugin_edit_profile');
+        include('smp-editprofile.php');
+    } elseif ($_GET['action'] == 'delete') {
+        check_admin_referer('social_media_page_plugin_delete_profile');
+        include('smp-deleteprofile.php');
+    }
+}
+
+/**
+ * Install plugin. This function will install the plugin but also take care of
+ * updating from previos versions.
+ *
+ * @return boolean True if function ran.
+ */
+function smp_install() {
+    $smp = new SocialMediaPage();
+    $smp->install();
+    return true;
+}
+
+/**
+ * Uninstall plugin and remove any options.
+ *
+ * @return boolean True if the function ran.
+ */
+function smp_unnstall() {
+    $smp = new SocialMediaPage();
+    $smp->uninstall();
+    return true;
+}
+
+/**
+ * Update the smpOptions array contained in the options table in the database.
+ *
+ * @global object $wpdb The Wordpress database object.
+ *
+ * @return boolean True if everything was saved, otherwise false.
+ */
+function smp_update_options()
+{
+    if (isset($_POST['smpUpdateOptions']) && current_user_can('manage_options')) {
+        check_admin_referer('social_media_page_plugin_update_options');
+
+        global $wpdb;
+
+        $smp = new SocialMediaPage();
+        $smpOptions = $smp->getSmpOptions();
+
+
+        if (isset($_POST['smp_sortOrder'])) {
+            $smpOptions['smp_sortOrder'] = $_POST['smp_sortOrder'];
         }
-    }
 
-    closedir($dh);
+        if (isset($_POST['smp_actualSortOrder'])) {
+            $order = stripcslashes($_POST['smp_actualSortOrder']);
+            $order = explode(',', $order);
+            $smp->smpSetCustomSortOrder($order);
+        }
 
-    if ( chmod($path, $filemode) ) {
-      return true;
-    } else {
-      return false;
-    }
-}
+        if (isset($_POST['smp_outputStyle'])) {
+            $smpOptions['smp_outputStyle'] = $_POST['smp_outputStyle'];
+        }
 
-/**
- * Save profile information
- *
- * @param integer $siteID    The ID of the site to be updated.
- * @param string  $profile   A string containing the username to be used in the save.
- * @param integer $sortOrder An optional integer that allows the position of the
- *                           site to be set.
- *
- * @return void
- */
-function smpSaveProfile($siteID, $profile, $sortOrder=0)
-{
-    global $wpdb;
-    $tp  = $wpdb->prefix;
-    $sql = "UPDATE ".$tp . "socialmediaprofiles";
-    if ( $profile == '' ) {
-        $sql .= " SET profileUrl = ''";
-    } else {
-        $sql .= " SET profileUrl =
-                REPLACE(
-						REPLACE(
-								REPLACE(profileTemplate,
-										'{userid}',
-										'" . $profile . "'),
-								'{username}',
-								'" . $profile . "'),
-						'{groupid}',
-						'" . $profile . "')";
-    };
-    if ( $sortOrder > 0 ) {
-        $sql .= ", sortOrder = '".$sortOrder."'";
-    }
-    $sql .= " WHERE id = '" . $siteID . "';";
-    $wpdb->query($sql);
-}
+        $smpOptions['smp_keyword'] = trim($wpdb->escape((string)$_POST["smp_keyword"]));
+        if (isset($_POST["smp_giveCredit"])) {
+            $smpOptions['smp_giveCredit'] = 'yes';
+        } else {
+            $smpOptions['smp_giveCredit'] = 'no';
+        }
 
-/**
- * Save Facebook profile information
- *
- * @param integer $siteID    The ID of the site to be updated - this should be the ID
- *                           for Facebook
- * @param string  $name      A string containing the username to be used in the save.
- * @param integer $userid    The ID of the user to be used in the save.
- * @param integer $sortOrder An optional integer that allows the position of Facebook
- *                           to be set.
- *
- * @return void
- */
-function smpSaveFacebookProfile($siteID, $name, $userid, $sortOrder=0)
-{
-    global $wpdb;
-    $tp  = $wpdb->prefix;
-    $sql = "UPDATE " . $tp . "socialmediaprofiles";
-    if ( $name == '' && $userid == '' ) {
-        $sql .= " SET profileUrl = ''";
-    } else {
-        $sql .= " SET profileUrl =
-                REPLACE(REPLACE(profileTemplate,
-                                '{name}',
-                                '" . $name . "'),
-                        '{userid}',
-                        '" . $userid . "')";
-    };
-    if ( $sortOrder != 0 ) {
-        $sql .= ", sortOrder = '".$sortOrder."'";
-    }
-    $sql .= " WHERE id = '" . $siteID . "';";
-    $wpdb->query($sql);
-}
+        if (isset($_POST["smp_linkTargetWindow"])) {
+            $smpOptions['smp_linkTargetWindow'] = 'yes';
+        } else {
+            $smpOptions['smp_linkTargetWindow'] = 'no';
+        }
 
-/**
- * Save Facebook page information
- *
- * @param integer $siteID    The ID of the site to be updated - this should be the ID
- *                           for Facebook
- * @param string  $name      A string containing the username to be used in the save.
- * @param integer $pageid    The ID of the page to be used in the save.
- * @param integer $sortOrder An optional integer that allows the position of Facebook
- *                           to be set.
- *
- * @return void
- */
-function smpSaveFacebookPage($siteID, $name, $pageid, $sortOrder=0)
-{
-    global $wpdb;
-    $tp  = $wpdb->prefix;
-    $sql = "UPDATE " . $tp . "socialmediaprofiles";
-    if ( $name == '' && $pageid == '' ) {
-        $sql .= " SET profileUrl = ''";
-    } else {
-        $sql .= " SET profileUrl =
-                REPLACE(REPLACE(profileTemplate,
-                                '{pagename}',
-                                '" . $name . "'),
-                        '{pageid}',
-                        '" . $pageid . "')";
-    };
-    if ( $sortOrder != 0 ) {
-        $sql .= ", sortOrder = '".$sortOrder."'";
-    }
-    $sql .= " WHERE id = '" . $siteID . "';";
-    $wpdb->query($sql);
-}
+        if (isset($_POST["smp_relNoFollow"])) {
+            $smpOptions['smp_relNoFollow'] = 'yes';
+        } else {
+            $smpOptions['smp_relNoFollow'] = 'no';
+        }
 
-/**
- * Save Wis.dm profile information
- *
- * @param integer $siteID    The ID of the site to be updated - this should be the ID
- *                           for Wis.dm
- * @param string  $name      A string containing the username to be used in the save.
- * @param integer $userid    The ID of the user to be used in the save.
- * @param integer $sortOrder An optional integer that allows the position of Wis.dm
- *                           to be set.
- *
- * @return void
- */
-function smpSaveWisdmProfile($siteID, $username, $userid, $sortOrder=0)
-{
-    global $wpdb;
-    $tp  = $wpdb->prefix;
-    $sql = "UPDATE " . $tp . "socialmediaprofiles";
-    if ( $name == '' && $userid == '' ) {
-        $sql .= " SET profileUrl = ''";
-    } else {
-        $sql .= " SET profileUrl =
-                REPLACE(REPLACE(profileTemplate,
-                                '{username}',
-                                '" . $username . "'),
-                        '{userid}',
-                        '" . $userid . "')";
-    };
-    if ( $sortOrder != 0 ) {
-        $sql .= ", sortOrder = '".$sortOrder."'";
-    }
-    $sql .= " WHERE id = '" . $siteID . "';";
-    $wpdb->query($sql);
-}
+        if (isset($_POST["smp_widgetTitle"])) {
+            $widgetTitle = trim($wpdb->escape((string)$_POST["smp_widgetTitle"]));
+            if ($widgetTitle == '') {
+                $smpOptions['smp_widgetTitle'] = 'Social Media';
+            } else {
+                $smpOptions['smp_widgetTitle'] = $widgetTitle;
+            }
+        } else {
+            $smpOptions['smp_widgetTitle'] = 'Social Media';
+        }
 
-/**
- * Save Hi5 profile information
- *
- * @param integer $siteID    The ID of the site to be updated - this should be the ID
- *                           for Hi5
- * @param string  $name      A string containing the username to be used in the save.
- * @param integer $userid    The ID of the user to be used in the save.
- * @param integer $sortOrder An optional integer that allows the position of Hi5
- *                           to be set.
- *
- * @return void
- */
-function smpSaveHi5Profile($siteID, $username, $userid, $sortOrder=0)
-{
-    global $wpdb;
-    $tp  = $wpdb->prefix;
-    $sql = "UPDATE " . $tp . "socialmediaprofiles";
-    if ( $name == '' && $userid == '' ) {
-        $sql .= " SET profileUrl = ''";
-    } else {
-        $sql .= " SET profileUrl =
-                REPLACE(REPLACE(profileTemplate,
-                                '{username}',
-                                '" . $username . "'),
-                        '{userid}',
-                        '" . $userid . "')";
-    };
-    if ( $sortOrder != 0 ) {
-        $sql .= ", sortOrder = '".$sortOrder."'";
-    }
-    $sql .= " WHERE id = '" . $siteID . "';";
-    $wpdb->query($sql);
-}
+        if (isset($_POST['smp_widgetUserId'])) {
+            $widgetUserId = (int)$wpdb->escape($_POST['smp_widgetUserId']);
+            $smpOptions['smp_widgetUserId'] = $widgetUserId;
+        }
 
-/**
- * Save LinkedIn Company profile information
- *
- * @param integer $siteID       The ID of the site to be updated - this should be the ID
- *                              for LinkedIn Company
- * @param string  $companyname  A string containing the company name to be used in the save.
- * @param integer $companyid    The ID of the company to be used in the save.
- * @param integer $sortOrder    An optional integer that allows the position of LinkedIn Company
- *                              to be set.
- *
- * @return void
- */
-function smpSaveLinkedInCompanyProfile($siteID, $companyname, $companyid, $sortOrder=0)
-{
-    global $wpdb;
-    $tp  = $wpdb->prefix;
-    $sql = "UPDATE " . $tp . "socialmediaprofiles";
-    if ( $companyname == '' && $companyid == '' ) {
-        $sql .= " SET profileUrl = ''";
-    } else {
-        $sql .= " SET profileUrl =
-                REPLACE(REPLACE(profileTemplate,
-                                '{lkdncompanyname}',
-                                '" . $companyname . "'),
-                        '{lkdncompanynameid}',
-                        '" . $companyid . "')";
-    };
-    if ( $sortOrder != 0 ) {
-        $sql .= ", sortOrder = '".$sortOrder."'";
+        $smp->saveSmpOptions($smpOptions);
+        return true;
     }
-    $sql .= " WHERE id = '" . $siteID . "';";
-    $wpdb->query($sql);
+    return false;
 }
 
 /**
  * Generate options form and save options.
  *
- * @return void
+ * @global string  $smp_title    The title of the plugin.
+ * @global string  $smpVer       The version of the plugin.
+ * @global object  $wpdb         The Wordpress db object.
+ * @global integer $user_ID      The current user ID.
+ * @global string  $smpimagepath The path of the image directory.
+ *
+ * @return mixed The return value depends on the action of the user.
  */
-function smpOptionsPage()
-{
-    global $smp_title, $smpVer, $wpdb;
+function smp_options_page() {
 
-	// update orders
-	if ( isset($_POST['smp_sortOrder']) ) {
-		switch ($_POST['smp_sortOrder']) {
-		case "site":
-			update_option('smp_sortOrder', 'site');
-			break;
-		case "url":
-			update_option('smp_sortOrder', 'url');
-			break;
-		case "profile":
-			update_option('smp_sortOrder', 'profile');
-			break;
-		case "random":
-			update_option('smp_sortOrder', 'random');
-			break;		
-		case "sortOrder":
-			update_option('smp_sortOrder', 'sortOrder');
-			break;
-		default:
-			update_option('smp_sortOrder', 'sortOrder');
-		}
-	}
+    if (get_option('smpOptions') == false) {
+        smp_install();
+    }
 
-	if ( isset($_POST['smp_outputStyle']) ) {
-		switch ($_POST['smp_outputStyle']) {
-		case "list":
-			update_option('smp_outputStyle', 'list');
-			break;
-		case "images":
-			update_option('smp_outputStyle', 'images');
-			break;
-		default:
-			update_option('smp_outputStyle', 'list');
-		}
-	}
-	
-    if ( isset($_POST['smp_update']) ) {
-        echo '<div id="message" class="updated fade"><p><strong>';
-        update_option('smp_keyword', trim($wpdb->escape((string)$_POST["smp_keyword"])));
-        if ( isset($_POST["smp_giveCredit"]) ) {
-          update_option('smp_giveCredit', 'yes');
-        } else {
-          update_option('smp_giveCredit', 'no');
+    if (isset($_GET['action'])) {
+        // nonce check is done in function.
+        return smp_crud_pages();
+    }
+
+    if (smp_update_options() === true) {
+         echo '<div id="message" class="updated fade"><p><strong>Config updated</strong></p></div>';
+    }
+
+    // Get plugin vars
+    global $smp_title, $smpVer;
+    // Get wordpress database connection
+    global $wpdb;
+    // Get user details
+    global $user_ID;
+    $smp = new SocialMediaPage();
+    $smpOptions = $smp->getSmpOptions();
+
+    // get sort order
+    $sortOrder  = $smp->getSmpOption('smp_sortOrder');
+    
+    if (isset($_POST['smpSaveProfile'])) {
+        check_admin_referer('social_media_page_plugin_add_site');
+        // save site information
+        $site            = $wpdb->escape($_POST['site']);
+        $url             = $wpdb->escape($_POST['url']);
+        $profile         = $wpdb->escape($_POST['profile']);
+        $profileTemplate = $wpdb->escape($_POST['profileTemplate']);
+        $logo            = $wpdb->escape($_POST['logo']);
+        $user_id         = (int)$wpdb->escape($_POST['user']);
+        $keyword         = $wpdb->escape($_POST['keyword']);
+
+        $smp->smpInsertProfile($site, $url, $profile, $profileTemplate, $logo, $user_id, $keyword);
+        echo '<div id="message" class="updated fade"><p><strong>Profile Saved</strong></p></div>';
+    } elseif (isset($_POST['smpUpdateProfile'])) {
+        check_admin_referer('social_media_page_plugin_update_site');
+        // save site information
+        $id              = (int)$wpdb->escape($_POST['id']);
+        $profile         = $wpdb->escape($_POST['profile']);
+        $profileTemplate = $wpdb->escape($_POST['profileTemplate']);
+        $logo            = $wpdb->escape($_POST['logo']);
+        $user_id         = (int)$wpdb->escape($_POST['user']);
+        $keyword         = $wpdb->escape($_POST['keyword']);
+
+        $smp->smpUpdateProfile($id, $profile, $profileTemplate, $user_id, $keyword);
+        echo '<div id="message" class="updated fade"><p><strong>Profile Updated</strong></p></div>';
+    } elseif (isset($_POST['smpDeleteProfile'])) {
+        check_admin_referer('social_media_page_plugin_delete_site');
+        switch ($_POST['smpDeleteProfile']) {
+            case 'Yes':
+                $id = (int)$wpdb->escape($_POST['id']);
+                $smp->smpDeleteProfile($id);
+                break;
+            case 'No':
+            default:
+                break;
         }
+    }
 
-        if ( isset($_POST["smp_relNoFollow"]) ) {
-          update_option('smp_relNoFollow', 'yes');
-        } else {
-          update_option('smp_relNoFollow', 'no');
+    $smpupdate = new SocialMediaPageUpdate();
+
+    // run once every couple of days or so to check for updates to profiles
+    if ($smpupdate->timeForUpdate($smp->getSmpOption('smp_lastFileCheck'))) {
+        $updatetime = $smpupdate->checkForUpdate();
+        if ($updatetime !== false) {
+            $options = array(
+                    'smp_updateFileStamp' => $updatetime,
+                    'smp_lastFileCheck' => time()
+            );
+            $smp->saveSmpOptions($options);
         }
+    }
 
-        if ( isset($_POST["smp_widgetTitle"]) ) {
-          $widgetTitle = trim($wpdb->escape((string)$_POST["smp_widgetTitle"]));
-          if ( $widgetTitle == '' ) {
-              update_option('smp_widgetTitle', 'Social Media');
-          } else {
-              update_option('smp_widgetTitle', $widgetTitle);
-          }
-        } else {
-          update_option('smp_widgetTitle', 'Social Media');
+    // Only users with manage_options privileges can access the update page.
+    if (current_user_can('manage_options')) {
+        // Get current profiles.csv file location
+        $file = $smpupdate->getProfilesCsvLocation();
+        if ($smp->getSmpOption('smp_updateFileStamp') > filemtime($file) && current_user_can('manage_options')) {
+            // If the file is ready to be updated print link to update aciton
+            $url = get_bloginfo('url') . 's/wp-admin/admin.php?page=social-media-page%2Fsmp-update.php&update=updateprofiles';
+            $action = "social_media_page_plugin_update_profiles";
+            $link = wp_nonce_url($url, $action);
+            echo "<p>The profiles file you have is out of date. Do you want to <a href='" . $link . "' title=\"Update profiles\">update</a>?</p>";
         }
+    }
 
-        // save site information - excluding exceptions
-        foreach ( $_POST['smp-id'] as $sortOrder=>$siteID ) {
-			if ( $_POST['facebookid'] == $siteID ) {
-				// Save Facebook information
-				$facebookname   = $wpdb->escape($_POST['facebookname']);
-				$facebookuserid = $wpdb->escape($_POST['facebookuserid']);
-				smpSaveFacebookProfile($_POST['facebookid'],
-										   $facebookname,
-										   $facebookuserid,
-										   $sortOrder+1);
-			} elseif ( $_POST['wisdmid'] == $siteID ) {
-				// Save Wis.dm information
-				$wisdmusername   = $wpdb->escape($_POST['wisdmusername']);
-				$wisdmuserid = $wpdb->escape($_POST['wisdmuserid']);
-					smpSaveWisdmProfile($_POST['wisdmid'],
-										   $wisdmusername,
-										   $wisdmuserid,
-										   $sortOrder+1);			
-			} elseif ( $_POST['hi5id'] == $siteID ) {
-				// Save Hi5 information
-				$hi5username   = $wpdb->escape($_POST['hi5username']);
-				$hi5userid     = $wpdb->escape($_POST['hi5userid']);
-					smpSaveHi5Profile($_POST['hi5id'],
-										   $hi5username,
-										   $hi5userid,
-										   $sortOrder+1);
-			} elseif ( $_POST['facebookpageid'] == $siteID ) {
-				// Save Facebook information
-				$facebookpagename   = $wpdb->escape($_POST['facebookpagename']);
-				$facebookpageid = $wpdb->escape($_POST['facebookpagepageid']);
-				smpSaveFacebookPage($_POST['facebookpageid'],
-										   $facebookpagename,
-										   $facebookpageid,
-										   $sortOrder+1);
-			} elseif ( $_POST['lkdncompanyid'] == $siteID ) {
-				// Save LinkedIn Company information   
-				$lkdncompanyname   = $wpdb->escape($_POST['lkdncompanyname']);
-				$lkdncompanynameid = $wpdb->escape($_POST['lkdncompanynameid']);
-				smpSaveLinkedInCompanyProfile($_POST['lkdncompanyid'],
-										   $lkdncompanyname,
-										   $lkdncompanynameid,
-										   $sortOrder+1);
-			} else {
-				$value = $wpdb->escape($_POST[$siteID]);
-				smpSaveProfile($siteID, $value, $sortOrder+1);
-			}
-        }
-								   
-        echo "Config updated";
-        echo '</strong></p></div>';
-
-    };
-    ?>
-    <div class="wrap">
+    ?><div class="wrap">
     <h2><?php echo $smp_title; ?> v <?php echo $smpVer; ?></h2>
-	<p>Setup | <a href="<?php echo $_SERVER["REQUEST_URI"]; ?>&help=help">Help</a></p>
-	
     <form method="post" action="<?php echo $_SERVER["REQUEST_URI"]; ?>">
-    <input type="hidden" name="smp_update" id="smp_update" value="true" />
-
-    <div style="border-top:1px solid rgb(204,204,204);">
-    <h3>General Options</h3>
-
-    <label for="smp_keyword">Keyword</label>
-    <input name="smp_keyword" type="text" size="50"
-           value="<?php echo get_option('smp_keyword') ?>" />
-    <p><em>This is the keyword that will be used to link to your profiles.</em></p>
-
-    <div style="border-top:1px solid rgb(204,204,204);">
-    <p><label for="smp_giveCredit">Give credit for plugin to plugin author?</label>
+    <?php if (current_user_can('manage_options')) { ?>
+        <?php wp_nonce_field('social_media_page_plugin_update_options'); ?>
+        <div style="border-top:1px solid rgb(204,204,204);">
+            <h3>General Options</h3>
+            <label for="smp_keyword">Keyword</label>
+            <input name="smp_keyword" type="text" size="50" value="<?php echo $smp->getSmpOption('smp_keyword'); ?>" />
+            <p><em>This is the keyword that will be used to link to your profiles.</em></p>
+            <div style="border-top:1px solid rgb(204,204,204);">
+                <p><label for="smp_giveCredit">Give credit for plugin to plugin author?</label>
     <?php
     $smpCreditChecked = '';
-    if ( get_option('smp_giveCredit') == 'yes' ) {
+    if ($smp->getSmpOption('smp_giveCredit') == 'yes') {
         $smpCreditChecked = 'checked="checked"';
     }
     ?>
-    <input name="smp_giveCredit" type="checkbox" <?php echo $smpCreditChecked; ?>
-    value="smp_giveCredit" /></p>
-
-    <p><label for="smp_relNoFollow">Add rel=&quot;nofollow&quot; attribute to all
-    links?</label>
+                    <input name="smp_giveCredit" type="checkbox" <?php echo $smpCreditChecked; ?>
+                           value="smp_giveCredit" /></p>
+                <p><label for="smp_linkTargetWindow">Open links in a new window?</label>
     <?php
+    $smpLinkTargetWindowChecked = '';
+    if ($smp->getSmpOption('smp_linkTargetWindow') == 'yes') {
+        $smpLinkTargetWindow = 'checked="checked"';
+    }
+    ?>
+                    <input name="smp_linkTargetWindow" type="checkbox" <?php echo $smpLinkTargetWindow; ?>
+                           value="smp_linkTargetWindow" /></p>
+                <p><label for="smp_relNoFollow">Add rel=&quot;nofollow&quot; attribute to all
+                        links?</label>
+                        <?php
     $smpNoFollowChecked = '';
-    if ( get_option('smp_relNoFollow') == 'yes' ) {
+    if ($smp->getSmpOption('smp_relNoFollow') == 'yes') {
         $smpNoFollowChecked = 'checked="checked"';
     }
     ?>
-    <input name="smp_relNoFollow" type="checkbox" <?php echo $smpNoFollowChecked; ?>
-    value="smp_relNoFollow" /></p>
+                    <input name="smp_relNoFollow" type="checkbox" <?php echo $smpNoFollowChecked; ?>
+                           value="smp_relNoFollow" /></p>
 
-    <p><label for="smp_widgetTitle">Title of Widget</label>
-    <input name="smp_widgetTitle" type="text" size="50"
-           value="<?php echo get_option('smp_widgetTitle') ?>" /></p>
-    <p><em>Leave blank to set back to the default of &quot;Social Media&quot;.</em></p>
+                <p><label for="smp_widgetTitle">Title of Widget</label>
+                    <input name="smp_widgetTitle" type="text" size="50"
+                           value="<?php echo $smp->getSmpOption('smp_widgetTitle') ?>" /></p>
+                <p><em>Leave blank to set back to the default of &quot;Social Media&quot;.</em></p>
 
-	<?php
-	// get sort order
-	$sortOrder  = get_option('smp_sortOrder');
-	?>
-	<p><label for="smp_sortOrder">Sort Order</label>
-	<select name="smp_sortOrder">
-		<option value="profile"<?php echo ($sortOrder=='profile')?' selected="selected"':''; ?>>Sort by profile name.</a></option>
-		<option value="url"<?php echo ($sortOrder=='url')?' selected="selected"':''; ?>>Sort by site url.</a></option>
-		<option value="sortOrder"<?php echo ($sortOrder=='sortOrder')?' selected="selected"':''; ?>>Sort by user defined sort order.</a></option>
-		<option value="site"<?php echo ($sortOrder=='site')?' selected="selected"':''; ?>>Sort by site name.</option>
-		<option value="random"<?php echo ($sortOrder=='random')?' selected="selected"':''; ?>>Random!</option>
-	</select></p>
-	
-	<?php
-	// get outputstyle
-	$outputStyle  = get_option('smp_outputStyle');
-	?>
-	<p><label for="smp_outputStyle">Output Style</label>
-	<select name="smp_outputStyle">
-		<option value="list"<?php echo ($outputStyle=='list')?' selected="selected"':''; ?>>A list.</a></option>
-		<option value="images"<?php echo ($outputStyle=='images')?' selected="selected"':''; ?>>Lots of images.</a></option>
-	</select></p>	
-	
-    </div>
-    </div>
-    <div class="submit">
-    <input type="submit" name="smp_update" value="Update Profiles &amp; Options" />
-    </div>
-
-    <h3>Social Media Profiles</h3>
-	<?php 
-	if ( $sortOrder == 'sortOrder' ) {	
-		?><p>Drag the grey areas up and down to order profiles.</p><?php
-	}
-	?>
-    <div id="smpUsername">Username/UserID</div>
-
+                <p><label for="smp_widgetUserId">Which User To Use For Widget</label>
+    <?php wp_dropdown_users('show_option_all=All&name=smp_widgetUserId&selected=' . $smp->getSmpOption('smp_widgetUserId')); ?>
+                <p><label for="smp_sortOrder">Sort Order</label>
+                    <select name="smp_sortOrder">
+                        <option value="profile"<?php echo ($sortOrder=='profile')?' selected="selected"':''; ?>>Sort by profile name.</option>
+                        <option value="url"<?php echo ($sortOrder=='url')?' selected="selected"':''; ?>>Sort by site url.</option>
+                        <option value="sortOrder"<?php echo ($sortOrder=='sortOrder')?' selected="selected"':''; ?>>Sort by user defined sort order.</option>
+                        <option value="site"<?php echo ($sortOrder=='site')?' selected="selected"':''; ?>>Sort by site name.</option>
+                        <option value="random"<?php echo ($sortOrder=='random')?' selected="selected"':''; ?>>Random!</option>
+                    </select></p>
     <?php
-    $profiles   = smpGetSocialProfiles(true);
-    global $exclusions;
-	if ( $sortOrder == 'sortOrder' ) {	
-		echo '<ul id="containersmpSiteWrapper">';
-	} else {
-		echo '<ul>';
-	}
-    foreach ( $profiles as $profile ) {
-        $additional = '';
-        switch ( $profile['site'] ) {
-        case 'MyBlogLog':
-        case 'bebo':
-        case 'Shelfari':
-        case 'Vimeo';
-            $additional = ' <strong>**</strong>';
-            break;
-        case 'Facebook':
-        case 'Reddit':
-        case 'MyOpenId':
-            $additional = ' <strong>*</strong>';
-            break;
-        default:
-            break;
-        }
-        if ( !in_array($profile['site'], $exclusions) ) {
-            $pattern = '#' . str_replace(array('{username}', '{userid}', '{groupid}'),
-                                         '(.*)',
-                                         str_replace('?',
-										             '\?',
-													 $profile['profileTemplate'])
-										) .
-                       '#i';
-            preg_match($pattern, $profile['profileUrl'], $fixedProfile);
-            $profile['profileUrl'] = $fixedProfile[1];
-            ?>
-			<li class="smp-sortable" id="<?php echo $profile['id']; ?>">
-			<input type="hidden" name="smp-id[]" value="<?php echo $profile['id']; ?>" />
-			<span class="smp-sortable-handle smpLogoSpan">
-            <img src="../wp-content/plugins/social-media-page/images/<?php
-            echo $profile['logo']; ?>"
-            alt="<?php echo $profile['site']; ?>" /><?php echo $profile['site'].$additional; ?></span>
+    // get outputstyle
+    $outputStyle  = $smp->getSmpOption('smp_outputStyle');
+    ?>
+                <p><label for="smp_outputStyle">Output Style</label>
+                    <select name="smp_outputStyle">
+                        <option value="list"<?php echo ($outputStyle=='list')?' selected="selected"':''; ?>>A list.</option>
+                        <option value="images"<?php echo ($outputStyle=='images')?' selected="selected"':''; ?>>Lots of images.</option>
+                    </select></p>
 
-            <input name="<?php echo $profile['id']; ?>" type="text" size="30" value="<?php
-                  echo $profile['profileUrl']; ?>" /> <?php
-                  echo $profile['profileTemplate']; ?><br />
-            </li><?php
-        } else {
-            // create exceptions
-            if ( $profile['site'] == 'Facebook' ) {
-                // add Facebook
-                $pattern = str_replace('{name}',
-                                       '(.*)',
-                                       $profile['profileTemplate']);
-                $pattern = '#'.str_replace('{userid}', '(.*)', $pattern).'#i';
-                preg_match($pattern, $profile['profileUrl'], $fixedProfile);
-                $profile['profileUrl'] = $fixedProfile[1];
-                ?>
-				<li class="smp-sortable" id="<?php echo $profile['id']; ?>">
-				<input type="hidden" name="smp-id[]" value="<?php echo $profile['id']; ?>" />
-                <span class="smp-sortable-handle smpLogoSpan">
-                <img src="../wp-content/plugins/social-media-page/images/<?php
-                          echo $profile['logo']; ?>"
-                     alt="<?php echo $profile['site']; ?>" />
-                <?php echo $profile['site'].$additional; ?></span>
-                <em>Name</em> <input name="facebookname"
-                       type="text"
-                       size="30"
-                       value="<?php echo $fixedProfile[1]; ?>" />
-                <?php echo $profile['profileTemplate']; ?>
-                <br />
-                <em id="smpFacebookId">User ID</em>
-                <input name="facebookuserid"
-                       type="text"
-                       size="30"
-                       value="<?php echo $fixedProfile[2]; ?>" />
-                <input name="facebookid"
-                       type="hidden"
-                       value="<?php echo $profile['id']; ?>" />
-                </li><?php
-            } elseif ( $profile['site'] == 'Facebook Page' ) {
-                // add Facebook Page
-                $pattern = str_replace('{pagename}',
-                                       '(.*)',
-                                       $profile['profileTemplate']);
-                $pattern = '#'.str_replace('{pageid}', '(.*)', $pattern).'#i';
-                preg_match($pattern, $profile['profileUrl'], $fixedProfile);
-                $profile['profileUrl'] = $fixedProfile[1];
-                ?>
-				<li class="smp-sortable" id="<?php echo $profile['id']; ?>">
-				<input type="hidden" name="smp-id[]" value="<?php echo $profile['id']; ?>" />
-                <span class="smp-sortable-handle smpLogoSpan">
-                <img src="../wp-content/plugins/social-media-page/images/<?php
-                          echo $profile['logo']; ?>"
-                     alt="<?php echo $profile['site']; ?>" />
-                <?php echo $profile['site'].$additional; ?></span>
-                <em>Page Name</em> <input name="facebookpagename"
-                       type="text"
-                       size="30"
-                       value="<?php echo $fixedProfile[1]; ?>" />
-                <?php echo $profile['profileTemplate']; ?>
-                <br />
-                <em id="smpFacebookId">Page ID</em>
-                <input name="facebookpagepageid"
-                       type="text"
-                       size="30"
-                       value="<?php echo $fixedProfile[2]; ?>" />
-                <input name="facebookpageid"
-                       type="hidden"
-                       value="<?php echo $profile['id']; ?>" />
-                </li><?php				
-            } elseif ( $profile['site'] == 'Wis.dm' ) {
-                // add Wis.dm
-                $pattern = str_replace('{username}',
-                                       '(.*)',
-                                       $profile['profileTemplate']);
-                $pattern = '#'.str_replace('{userid}', '(.*)', $pattern).'#i';
-                preg_match($pattern, $profile['profileUrl'], $fixedProfile);
-                $profile['profileUrl'] = $fixedProfile[1];
-                ?>
-				<li class="smp-sortable" id="<?php echo $profile['id']; ?>">
-				<input type="hidden" name="smp-id[]" value="<?php echo $profile['id']; ?>" />				
-                <span class="smp-sortable-handle smpLogoSpan">
-                <img src="../wp-content/plugins/social-media-page/images/<?php
-                          echo $profile['logo']; ?>"
-                     alt="<?php echo $profile['site']; ?>" />
-                <?php echo $profile['site'].$additional; ?></span>
-                <em>Username</em> <input name="wisdmuserid"
-                       type="text"
-                       size="30"
-                       value="<?php echo $fixedProfile[1]; ?>" />
-                <?php echo $profile['profileTemplate']; ?>
-                <br />
-                <em id="smpWisdmId">User ID</em>
-                <input name="wisdmusername"
-                       type="text"
-                       size="30"
-                       value="<?php echo $fixedProfile[2]; ?>" />
-                <input name="wisdmid"
-                       type="hidden"
-                       value="<?php echo $profile['id']; ?>" />
-                </li><?php
-            } elseif ( $profile['site'] == 'Hi5' ) {
-                // add Hi5
-                $pattern = str_replace('{username}',
-                                       '(.*)',
-                                       $profile['profileTemplate']);
-                $pattern = '#'.str_replace('{userid}', '(.*)', $pattern).'#i';
-                preg_match($pattern, $profile['profileUrl'], $fixedProfile);
-                $profile['profileUrl'] = $fixedProfile[1];
-                ?>
-				<li class="smp-sortable" id="<?php echo $profile['id']; ?>">
-				<input type="hidden" name="smp-id[]" value="<?php echo $profile['id']; ?>" />				
-                <span class="smp-sortable-handle smpLogoSpan">
-                <img src="../wp-content/plugins/social-media-page/images/<?php
-                          echo $profile['logo']; ?>"
-                     alt="<?php echo $profile['site']; ?>" />
-                <?php echo $profile['site'].$additional; ?></span>
-                <em>Username</em> <input name="hi5username"
-                       type="text"
-                       size="30"
-                       value="<?php echo $fixedProfile[1]; ?>" />
-                <?php echo $profile['profileTemplate']; ?>
-                <br />
-                <em id="smphi5Id">User ID</em>
-                <input name="hi5userid"
-                       type="text"
-                       size="30"
-                       value="<?php echo $fixedProfile[2]; ?>" />
-                <input name="hi5id"
-                       type="hidden"
-                       value="<?php echo $profile['id']; ?>" />
-                </li><?php
-            } elseif ( $profile['site'] == 'LinkedIn Company' ) {
-                // add LinkedIn Company 
-                $pattern = str_replace('{lkdncompanynameid}',
-                                       '(.*)',
-                                       $profile['profileTemplate']);
-                $pattern = '#'.str_replace('{lkdncompanyname}', '(.*)', $pattern).'#i';
-                preg_match($pattern, $profile['profileUrl'], $fixedProfile);
-                $profile['profileUrl'] = $fixedProfile[1];
-                ?>
-				<li class="smp-sortable" id="<?php echo $profile['id']; ?>">
-				<input type="hidden" name="smp-id[]" value="<?php echo $profile['id']; ?>" />				
-                <span class="smp-sortable-handle smpLogoSpan">
-                <img src="../wp-content/plugins/social-media-page/images/<?php
-                          echo $profile['logo']; ?>"
-                     alt="<?php echo $profile['site']; ?>" />
-                <?php echo $profile['site'].$additional; ?></span>
-                <em>Company ID</em> <input name="lkdncompanynameid"
-                       type="text"
-                       size="30"
-                       value="<?php echo $profile['profileUrl']; ?>" />
-                <?php echo $profile['profileTemplate']; ?>
-                <br />
-                <em id="smpLinkedInCompanyId">Company Name</em>
-                <input name="lkdncompanyname"
-                       type="text"
-                       size="30"
-                       value="<?php echo $fixedProfile[2]; ?>" />
-                <input name="lkdncompanyid"
-                       type="hidden"
-                       value="<?php echo $profile['id']; ?>" />
-                </li><?php
+            </div>
+        </div>
+<?php } ?>
+        <h3>Social Media Profiles</h3>
+    <?php
+    if ($sortOrder == 'sortOrder') {
+        echo '<p>Drag the grey areas up and down to order profiles.</p>';
+    }
+
+            get_currentuserinfo();
+            $smp = new SocialMediaPage();
+            if (!isset($_GET['user_id'])) {
+                if (current_user_can('manage_options')) {
+                    $profiles = $smp->smpGetSocialProfiles();
+                } else {
+                    $profiles = $smp->smpGetSocialProfiles($user_ID);
+                }
+            } else {
+                $profiles = $smp->smpGetSocialProfiles($_GET['user_id']);
             }
-        }
-    }
-    ?>
-    </ul>
-	<?php
-	if ( $sortOrder == 'sortOrder' ) {
-	?>
-    <script type="text/javascript">
-		jQuery(function() {
-			jQuery("#containersmpSiteWrapper").sortable({
-				placeholder: 'smp-sortable'
-			});
-			jQuery("#containersmpSiteWrapper").disableSelection();
-		});
-    </script>
-	<?php 
-	}
-	?>
-    <p><strong>*</strong> Make sure that you enable public vewing in your
-    options page!</p>
-    <p><strong>**</strong> Make sure that you set your profile URL in the
-    settings.</p>
 
-    <div class="submit">
-    <input type="submit" name="smp_update" value="Update Profiles &amp; Options" />
-    </div>
-	</form>
-    </div>
-	<?php
-}
+            echo '<p>' . count($profiles) . ' profiles found.</p>';
 
-/**
-* Add header information to the admin page.
-*
-* @return void
-*/
-function smpAddAdminHeader()
-{
-    ?>
-    <style type="text/css">
-    ul#containersmpSiteWrapper li.smp-sortable{
-		padding-bottom:0px;
-		border-bottom:1px dotted #BFBFBF;
-		white-space: nowrap;
-    }
-    div#smpUsername{
-        margin-left:200px;
-    }
-    span.smpLogoSpan{
-        display:block;
-        width:150px;
-        float:left;
-    }
-    span.smpLogoSpan img{
-       padding:3px;
-       margin:0;
-    }
-	#containersmpSiteWrapper li span.smp-sortable-handle{
-		cursor:move;
-		margin-top:2px;
-        border:1px solid #DADADA;
-	    background-color:#EFEFEF;		
-	}
-    </style>
+            if ($sortOrder == 'sortOrder') {
+                echo '<ul id="containersmpSiteWrapper">';
+            } else {
+                echo '<ul id="smpSiteWrapper">';
+            }
+            global $smpimagepath;
+            foreach ($profiles as $profile) {
+                ?>
+        <li class="smp-sortable" id="<?php echo $profile['id']; ?>">
+            <span class="smp-sortable-handle smpLogoSpan">
+                <img src="<?php
+                echo $smpimagepath . $profile['logo']; ?>"
+                     alt="<?php echo $profile['site']; ?>" /><?php echo $profile['site']; ?>
+                &nbsp;-&nbsp;&nbsp;<?php echo $profile['profileUrl'];
+            $profileUser = get_userdata($profile['user_login']);
+            echo ' (' . $profileUser->display_name . ') ';
+            if ($profile['keyword'] != '') {
+                echo ' Keyword: ' . $profile['keyword'];
+            }
+         ?>
+            </span>
+            <span class="smpEditSpan">
+                        <?php
+                        $url = $_SERVER["REQUEST_URI"]. "&action=edit";
+                        $action = "social_media_page_plugin_edit_profile";
+                        $link = wp_nonce_url($url, $action);
+        ?>
+                <a class="editProfile" href="<?php echo $link . '&amp;site=' . $profile['id']; ?>" title="Edit <?php echo $profile['site']; ?> Profile">Edit</a>
+                        <?php
+                        $url = $_SERVER["REQUEST_URI"]. "&action=delete";
+                        $action = "social_media_page_plugin_delete_profile";
+                        $link = wp_nonce_url($url, $action);
+                        ?>
+                <a class="editProfile" href="<?php echo $link . '&amp;site=' . $profile['id']; ?>" title="Delte <?php echo $profile['site']; ?> Profile">Delete</a>
+            </span>
+        </li><?php } ?>
+        </ul>
+        <div class="more">
     <?php
+    $url = $_SERVER["REQUEST_URI"]. "&action=add1";
+            $action = "social_media_page_plugin_add_profile1";
+            $link = wp_nonce_url($url, $action);
+    ?>
+            <p><strong><a href="<?php echo $link; ?>">Add profile to list</a></strong></p>
+        </div>
+
+        <div class="submit">
+            <input type="submit" name="smpUpdateOptions" value="Save Options" />
+        </div>
+        <input type="hidden" value="" id="smp_actualSortOrder" name="smp_actualSortOrder" />
+    </form>
+    <?php
+    if (current_user_can('manage_options')) {
+        echo '<h4>Filter by user:</h4>';
+        echo '<form method="get" action=' . $_SERVER["REQUEST_URI"] . '">';
+        if (isset($_GET['user_id']) && is_integer((int)$_GET['user_id'])) {
+            wp_dropdown_users(array('show_option_all' => 'All', 'name' => 'user_id', 'selected' => (int)$_GET['user_id']));
+            } else {
+                wp_dropdown_users(array('show_option_all' => 'All', 'name' => 'user_id'));
+            }
+            echo '<input type="submit" name="smpSelectUser" id="smpSelectUser" value="Show this users profiles" />';
+            echo '<input type="hidden" name="page" value="social-media-page/social-media-page.php" />';
+            echo '</form>';
+        }
+        ?>
+        <?php
+        if ($sortOrder == 'sortOrder') {
+            ?>
+    <script type="text/javascript">
+        jQuery(function() {
+            jQuery("#containersmpSiteWrapper").sortable({
+                placeholder: 'smp-sortable',
+                cancel: '.smpEditSpan',
+                update: function(event, ui) {
+                    var order = jQuery('#containersmpSiteWrapper').sortable('toArray');
+                    console.log(order);
+                    jQuery('#smp_actualSortOrder').val(order);
+                }
+            });
+            jQuery("#containersmpSiteWrapper").disableSelection();
+        });
+    </script>
+        <?php
+    }
+    ?>
+    <h4>For all profiles on this list you should make sure that that:</h4>
+    <ul id="smpSiteHints">
+        <li>You have enabled public vewing.</li>
+        <li>You have set your personalised profile URL.</li>
+    </ul>
+    <p>Not all sites will have these options, but you should make sure that
+        users can visit your profile page. If in doubt just log out and try and
+        view your profile.</p>
+
+</div>
+    <?php
+    $smp->saveSmpOptions($smpOptions);
 }
 
 /**
-* Create the page
-*
-* @param boolean $all Boolean value that indicates if all profiles should be
-*                     returned or only those that have user information saved.
-*
-* @return array An array of profiles.
-*/
-function smpGetSocialProfiles( $all=false )
-{
-    global $wpdb;
-
-    $sortOrder  = get_option('smp_sortOrder');
-
-    $tp = $wpdb->prefix;
-
-    $sql = "SELECT id,site,profileUrl,logo,profileTemplate,sortOrder
-            FROM " . $tp . "socialmediaprofiles";
-    if ( $all !== true ) {
-        $sql .= " WHERE profileUrl <> ''";
-    }
-    
-    switch ($sortOrder) {
-    case "site":
-        $sql .= " ORDER BY site ASC";
-        break;
-    case "url":
-        $sql .= " ORDER BY url ASC";
-        break;
-    case "random":
-        $sql .= " ORDER BY RAND() ASC";
-        break;
-    case "profile":
-        $sql .= " ORDER BY profileUrl ASC";
-        break;		
-    case "sortOrder":
-        $sql .= " ORDER BY sortOrder ASC";
-        break;
-    default:
-        $sql .= " ORDER BY sortOrder ASC";
-    }
-    $profiles = (array)$wpdb->get_results($sql, ARRAY_A);
-    return $profiles;
+ * Add style information to the admin page.
+ */
+function smp_add_admin_header() {
+    ?><style type="text/css">
+    span.smpLogoSpan { line-height:20px; }
+    span.smpEditSpan { display:block; float:left; padding-right:10px; }
+    span.smpLogoSpan img { margin-right:5px; }
+    ul#containersmpSiteWrapper li, ul#smpSiteWrapper li { background-color:#EFEFEF; border:1px solid #DADADA; padding:3px 5px 1px 3px; }
+    ul#containersmpSiteWrapper li span.smp-sortable-handle { cursor: move; }
+    ul#smpSiteHints li{ list-style:disc; margin-left:20px; }
+</style><?php
 }
 
 /**
-* Create the page
-*
-* @param boolean $widget Used to display different layout for widgets.
-*
-* @return string The page contents.
-*/
-function smpCreatePage( $widget=false )
-{
+ * Create the content for the widget or page.
+ *
+ * @global string $smpimagepath The path of the images.
+ *
+ * @param integer $user_id The current user ID.
+ * @param boolean $widget  Are we in widget mode?
+ *
+ * @return string The generated content.
+ */
+function smp_print_list($user_id = 0, $widget=false) {
     global $smpimagepath;
 
-    $keyword     = (string)get_option('smp_keyword');
-    $giveCredit  = get_option('smp_giveCredit');
-    $relNofollow = get_option('smp_relNoFollow');
-	$outputStyle = get_option('smp_outputStyle');	
-    $profiles    = smpGetSocialProfiles();
-    $t_out       = '';
+    $smp = new SocialMediaPage();
 
-    // make sure there are profiles to use
-    if ( count($profiles) > 0 ) {
-        if ( !$widget ) {
-            $t_out .= '<div id="smp-wrapper">';
-        }
-		
-		if ( $outputStyle == 'images' ) {
-				foreach ( $profiles as $profile ) {
-					$t_out .= '<a href="' . $profile['profileUrl'] . '" title="' . $keyword . '"';
-					if ( $relNofollow == 'yes' ) {
-						$t_out .= ' rel="nofollow"';
-					}
-					$t_out .= '><img src="' . $smpimagepath.$profile['logo'] . '"
-						 alt="' . $keyword . ' ' . $profile['site'] . '" /></a>';
-				}
-		} else {
-			$t_out .= '<ul>';
-			if ( $widget ) {
-				foreach ( $profiles as $profile ) {
-					$t_out .= '<li>
-					<img src="' . $smpimagepath.$profile['logo'] . '"
-						 alt="' . $keyword . ' ' . $profile['site'] . '" />
-					<a href="' . $profile['profileUrl'] . '" title="' . $keyword . '"';
-					if ( $relNofollow == 'yes' ) {
-						$t_out .= ' rel="nofollow"';
-					}
-					$t_out .= '>' . $profile['site'] . '</a></li>';
-				}
-			} else {
-				foreach ( $profiles as $profile ) {
-					$t_out .= '<li>
-					<img src="' . $smpimagepath.$profile['logo'] . '"
-						 alt="' . $keyword . ' ' . $profile['site'] . '" />
-					<a href="' . $profile['profileUrl'] . '" title="' . $keyword . '"';
-					if ( $relNofollow == 'yes' ) {
-						$t_out .= ' rel="nofollow"';
-					}
-					$t_out .= '>' . $keyword . '</a> at ' . $profile['site'] . '</li>';
-				}
-			}
-			$t_out .= '</ul>';
-		}
-        if ( $giveCredit == "yes" ) {
-            $t_out .= '<div style="text-align:right;">
-                   <p style="font-size:90%;">Created by
-                   <a href="http://www.norton42.org.uk" title="Philip Norton"';
-            if ( $relNofollow == 'yes' ) {
-                $t_out .= ' rel="nofollow"';
-            }
-            $t_out .= '>Philip Norton</a></p></div>';
-        }
-        if ( !$widget ) {
-            $t_out .= '</div>';
-        }
+    $globalkeyword    = (string)$smp->getSmpOption('smp_keyword');
+    $giveCredit       = $smp->getSmpOption('smp_giveCredit');
+    $linkTargetWindow = ($smp->getSmpOption('smp_linkTargetWindow')=='yes'?' target="_blank"':'');
+    $relNofollow      = ($smp->getSmpOption('smp_relNoFollow')=='yes'?' rel="nofollow"':'');
+    $outputStyle      = $smp->getSmpOption('smp_outputStyle');
 
-        // Ampersand fix
-        $t_out = str_replace("&amp;amp;", "&amp;", $t_out);
+    // If called from the widget then use smp_widgetUserId option otherwise user_id will be present.
+    if ($widget == false) {
+        $profiles    = $smp->smpGetSocialProfiles($user_id);
+        $templatefile = 'widget.tpl';
+    } else {
+        $profiles    = $smp->smpGetSocialProfiles($smp->getSmpOption('smp_widgetUserId'));
+        $templatefile = 'page.tpl';
     }
+
+    $t_out = '';
+
+    // Include template file
+    include  'templates/' . $templatefile;
+
+    // Ampersand fix
+    $t_out = str_replace("&amp;amp;", "&amp;", $t_out);
     return $t_out;
 }
 
 /**
-* Create the page
-*
-* @param string $content The contents of the page.
-*
-* @return string The page contents.
-*/
-function smpGeneratePage( $content )
-{
-    if ( strpos($content, "<!-- social-media-page -->") !== false ) {
-        $content = preg_replace('/<p>\s*<!--(.*)-->\s*<\/p>/i',
-                                "<!--$1-->",
-                                $content);
-        $content = str_replace('<!-- social-media-page -->',
-                               smpCreatePage(),
-                               $content);
+ * Find and replace a sring in the text with the social media list.
+ *
+ * @param string $content The content of the page/post.
+ * 
+ * @return string The altered content.
+ */
+function smp_generate_page($content) {
+    preg_match_all('/\<!-- social-media-page(\d+)? --\>/', $content, $match);
+
+    foreach ($match[0] as $key => $block) {
+        // If the same key in second item in $match array is an integer then this is the user id to use.
+        // Otherwise we can just use a normal string replace.
+        if (is_numeric($match[1][$key])) {
+            $content = preg_replace('/(\<!-- social-media-page'.$match[1][$key].' --\>)/', smp_print_list($match[1][$key]), $content);
+        } else {
+            $content = str_replace('<!-- social-media-page -->', smp_print_list(), $content);
+        }
     }
+
     return $content;
 }
 
 /**
-* Create a Social Media Page Widget
-*
-* @return void
-*/
-function smpWidget($args)
-{
+ *
+ * @param <type> $args
+ */
+function smp_widget($args) {
     extract($args);
-
-    $widgetTitle = get_option('smp_widgetTitle');
+    $smp = new SocialMediaPage();
+    $widgetTitle = $smp->getSmpOption('smp_widgetTitle');
 
     echo $before_widget;
     echo $before_title . __($widgetTitle) . $after_title;
-    echo smpCreatePage(true);
+    echo smp_print_list($smp->getSmpOption('smp_widgetUserId'), true);
     echo $after_widget;
 }
 
 /**
-* Initialise and register the Social Media Page Widget
-*
-* @return void
-*/
-function initSocialMedia() {
-    register_sidebar_widget(__('Social Media Page'), 'smpWidget');
+ * Add the widget.
+ *
+ * @global array $wp_registered_widgets The available registered widgets.
+ */
+function smp_init_social_media() {
+    register_sidebar_widget(__('Social Media Page'), 'smp_widget');
     global $wp_registered_widgets;
     $wp_registered_widgets[sanitize_title(__('Social Media Page'))]['description'] = 'Social Media Page Plugin Widget';
 }
 
 /**
- * Register with Wordpress.
+ * Register actions and filters with Wordpress.
  */
-add_action("plugins_loaded", "initSocialMedia");
+// Add widget initialisation function for this plugin to Wordpress.
+add_action("plugins_loaded", "smp_init_social_media");
 
-register_activation_hook(__FILE__, 'smpInstall');
+// Register the install function.
+register_activation_hook(__FILE__, 'smp_install');
 
-add_filter('the_content', 'smpGeneratePage');
-add_action('admin_menu', 'smpAddOptionPages');
-add_action('admin_head', 'smpAddAdminHeader');
+// Register the uninstall function.
+register_deactivation_hook(__FILE__, 'smp_unnstall');
 
-// include scripts for drag and drop, but only in admin section
-if ( is_admin() ) {
-    wp_enqueue_script("jquery-ui-sortable");
+// Add a content filter to convert post text into the social media page.
+add_filter('the_content', 'smp_generate_page');
+
+// Add the options page.
+add_action('admin_menu', 'smp_add_option_pages');
+
+// include scripts and styling, but only in admin section and only
+// when on the correct page
+if (strpos($_GET['page'],'social-media-page') !== false) {
+    if (is_admin()) {
+        add_action('admin_head', 'smp_add_admin_header');
+        wp_enqueue_script("jquery-ui-sortable");
+    }
 }
