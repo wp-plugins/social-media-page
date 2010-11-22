@@ -3,24 +3,34 @@
 if (count($profiles) > 0) {
   if ($outputStyle == 'images') {
     foreach ($profiles as $profile) {
-      $t_out .= '<a href="' . $profile['profileUrl'] . '" title="' . $globalkeyword . '"';
+      if ($profile['keyword'] != '') {
+          $keyword = $profile['keyword'];
+      } elseif ($globalkeyword != '') {
+          $keyword = $globalkeyword;
+      } else {
+          $keyword .= $profile['site'];
+      }
+      $t_out .= '<a href="' . $profile['profileUrl'] . '" title="' . $keyword . '"';
       $t_out .= $relNofollow;
       $t_out .= $linkTargetWindow;
-      $t_out .= '><img src="' . $smpimagepath.$profile['logo'] . '" alt="' . $globalkeyword . ' ' . $profile['site'] . '" /></a>';
+      $t_out .= '><img src="' . $smpimagepath . $profile['logo'] . '" alt="' . $keyword . ' ' . $profile['site'] . '" /></a>';
     }
   } else {
     $t_out .= '<ul>';
     foreach ($profiles as $profile) {
-      $t_out .= '<li><img src="' . $smpimagepath.$profile['logo'] . '" alt="' . $globalkeyword . ' ' . $profile['site'] . '" />
-                     <a href="' . $profile['profileUrl'] . '" title="' . $globalkeyword . '"';
+      if ($profile['keyword'] != '') {
+          $keyword = $profile['keyword'];
+      } elseif ($globalkeyword != '') {
+          $keyword = $globalkeyword;
+      } else {
+          $keyword .= $profile['site'];
+      }
+
+      $t_out .= '<li><img src="' . $smpimagepath . $profile['logo'] . '" alt="' . $keyword . ' ' . $profile['site'] . '" />
+                     <a href="' . $profile['profileUrl'] . '" title="' . $keyword . '"';
       $t_out .= $relNofollow;
       $t_out .= $linkTargetWindow;
-      $t_out .= '>';
-      if ($profile['keyword'] != '') {
-          $t_out .= $profile['keyword'];
-      } elseif ($globalkeyword != '') {
-          $t_out .= $globalkeyword;
-      }
+      $t_out .= '>' . $keyword;
 
     $t_out .= '</a> at ' . $profile['site'] . '</li>';
     }

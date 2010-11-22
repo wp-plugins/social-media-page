@@ -15,7 +15,7 @@
  * Plugin URI: http://www.hashbangcode.com/
  * Description: Generates a list of social media profiles on a given page or as a widget. <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social Media Page plugin homepage">Social Media Page plugin homepage</a>.
  * Author: Philip Norton
- * Version: 2.0
+ * Version: 2.1
  * Author URI: http://www.hashbangcode.com/
  *
  */
@@ -33,7 +33,7 @@ require 'SocialMediaPageUpdate.php';
 /**
  * Version number.
  */
-$smpVer = '2.0';
+$smpVer = '2.1';
 
 /**
  * Image path.
@@ -507,7 +507,7 @@ function smp_print_list($user_id = 0, $widget=false) {
     $outputStyle      = $smp->getSmpOption('smp_outputStyle');
 
     // If called from the widget then use smp_widgetUserId option otherwise user_id will be present.
-    if ($widget == true) {
+    if ($widget == false) {
         $profiles    = $smp->smpGetSocialProfiles($user_id);
         $templatefile = 'widget.tpl';
     } else {
