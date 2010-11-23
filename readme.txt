@@ -4,7 +4,7 @@ Donate link: http://www.hashbangcode.com/
 Tags: social media page,social media,social,media,page,profile,profiles
 Requires at least: 2.6.3
 Tested up to: 3.0
-Stable tag: 2.1
+Stable tag: 2.2
 
 The Social Media Page Wordpress plugin will add a list of links to your social media profiles on a page or post of your choice.
 
@@ -17,6 +17,9 @@ Rather than getting you to enter all of your social media profiles as URLs the p
 When the links are displayed on the page it will use a keyword of your choice as the text for the link.
 
 With this plugin you can create a central base for any social media strategy.
+
+= New in version 2.2 =
+1. Bug fixes.
 
 = New in version 2.1 =
 1. Bug fixes.

@@ -3,6 +3,7 @@
 if (count($profiles) > 0) {
   if ($outputStyle == 'images') {
     foreach ($profiles as $profile) {
+      $keyword = '';
       if ($profile['keyword'] != '') {
           $keyword = $profile['keyword'];
       } elseif ($globalkeyword != '') {
@@ -18,6 +19,7 @@ if (count($profiles) > 0) {
   } else {
     $t_out .= '<ul>';
     foreach ($profiles as $profile) {
+      $keyword = '';
       if ($profile['keyword'] != '') {
           $keyword = $profile['keyword'];
       } elseif ($globalkeyword != '') {

@@ -15,7 +15,7 @@
  * Plugin URI: http://www.hashbangcode.com/
  * Description: Generates a list of social media profiles on a given page or as a widget. <a href="http://www.norton42.org.uk/294-social-media-page-plugin-for-wordpress.html" title="Social Media Page plugin homepage">Social Media Page plugin homepage</a>.
  * Author: Philip Norton
- * Version: 2.1
+ * Version: 2.2
  * Author URI: http://www.hashbangcode.com/
  *
  */
