@@ -33,7 +33,7 @@ require 'SocialMediaPageUpdate.php';
 /**
  * Version number.
  */
-$smpVer = '2.1';
+$smpVer = '2.2';
 
 /**
  * Image path.
